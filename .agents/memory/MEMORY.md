@@ -1,0 +1,1 @@
+- [Luxe Horizon auth and preview](luxe-horizon-auth-and-preview.md) — preserve the Supabase-authenticated admin gate and explicit demo fallback split.

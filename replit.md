@@ -1,15 +1,17 @@
-# [Project name]
+# Luxe Horizon Collection OS
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Mobile-first collection operations for Luxe Horizon: upload and review product imagery privately, then publish a premium customer catalogue.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server
+- `pnpm --filter @workspace/luxe-horizon run dev` — run the web app
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Supabase auth variables: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- Optional `VITE_LUXE_HORIZON_WHATSAPP` provides the initial enquiry number in the UI
 
 ## Stack
 
@@ -22,15 +24,23 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/luxe-horizon/src/App.tsx` — public catalogue, private admin routes, and shared product workflows
+- `artifacts/luxe-horizon/src/index.css` — centralized Luxe Horizon tokens and typography
+- `artifacts/luxe-horizon/src/lib/supabase.ts` — optional Supabase Auth client, enabled by public env values
+- `artifacts/api-server/src/routes/luxe-horizon.ts` — API preview contract handlers and seed data
+- `lib/api-spec/openapi.yaml` — source of truth for generated API hooks and Zod schemas
+- `attached_assets/` — supplied Luxe Horizon brand reference assets
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The public catalogue and private admin workflows share one React artifact but have separate route shells and visual priorities.
+- The API uses the locked collection/product vocabulary and keeps the public catalogue filtered to active, published products.
+- Supabase Auth is a real browser-side gate when configured; the preview remains usable in explicit demo mode until deployment values are provided.
+- Product image bytes stay outside the API database contract; image paths are passed through the upload and product-image models for Supabase Storage integration.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Luxe Horizon can stage multi-image mobile uploads, apply AI classification suggestions, review uncertain items, manage recurring collections, publish filtered customer views, copy shareable catalogue links, generate admin-only PDF requests, and route customer enquiries to WhatsApp.
 
 ## User preferences
 
@@ -38,7 +48,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Run API codegen after changing `lib/api-spec/openapi.yaml`.
+- The web build expects the workflow-provided `PORT` and `BASE_PATH`; use the managed web workflow for preview.
+- Supabase public variables are deliberately optional for local preview, but production admin routes should be configured before publishing.
 
 ## Pointers
 

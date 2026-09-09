@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Luxe Horizon Collection OS"
+description = "A mobile-first private admin app and public luxury catalogue for organizing, reviewing, publishing, and sharing Luxe Horizon product collections."
+version = "1.0.0"
+id = "artifacts/luxe-horizon"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18456
+
+[services.development]
+run = "pnpm --filter @workspace/luxe-horizon run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/luxe-horizon", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/luxe-horizon/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18456"
+BASE_PATH = "/"

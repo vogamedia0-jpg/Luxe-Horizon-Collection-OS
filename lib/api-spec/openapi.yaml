@@ -3,13 +3,21 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Luxe Horizon Collection OS API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: collections
+    description: Collection management
+  - name: products
+    description: Product management and review
+  - name: catalogue
+    description: Public catalogue queries
+  - name: settings
+    description: Catalogue settings
 paths:
   /healthz:
     get:
@@ -24,7 +32,351 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /collections:
+    get:
+      operationId: listCollections
+      tags: [collections]
+      summary: List collections
+      responses:
+        "200":
+          description: Collections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Collection"
+    post:
+      operationId: createCollection
+      tags: [collections]
+      summary: Create a collection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionInput"
+      responses:
+        "201":
+          description: Created collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+  /collections/{collectionId}:
+    get:
+      operationId: getCollection
+      tags: [collections]
+      summary: Get a collection
+      parameters:
+        - $ref: "#/components/parameters/CollectionId"
+      responses:
+        "200":
+          description: Collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateCollection
+      tags: [collections]
+      summary: Update a collection
+      parameters:
+        - $ref: "#/components/parameters/CollectionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionUpdate"
+      responses:
+        "200":
+          description: Updated collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Collection"
+    delete:
+      operationId: deleteCollection
+      tags: [collections]
+      summary: Delete a collection
+      parameters:
+        - $ref: "#/components/parameters/CollectionId"
+      responses:
+        "204":
+          description: Deleted collection
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [collections]
+      summary: Get collection dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List products for admin review
+      parameters:
+        - $ref: "#/components/parameters/CollectionQuery"
+        - $ref: "#/components/parameters/GenderQuery"
+        - $ref: "#/components/parameters/CategoryQuery"
+        - $ref: "#/components/parameters/ReviewQuery"
+        - $ref: "#/components/parameters/PublishedQuery"
+      responses:
+        "200":
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create an uploaded product
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+  /products/{productId}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a product
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update product classification and state
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: Updated product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "204":
+          description: Deleted product
+  /products/bulk:
+    patch:
+      operationId: bulkUpdateProducts
+      tags: [products]
+      summary: Apply a review action to several products
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkProductUpdate"
+      responses:
+        "200":
+          description: Updated products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+  /products/upload:
+    post:
+      operationId: uploadProducts
+      tags: [products]
+      summary: Create products from a mobile batch upload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadBatch"
+      responses:
+        "201":
+          description: Uploaded products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+  /catalogue:
+    get:
+      operationId: getCatalogue
+      tags: [catalogue]
+      summary: Browse the public published catalogue
+      parameters:
+        - $ref: "#/components/parameters/CollectionQuery"
+        - $ref: "#/components/parameters/GenderQuery"
+        - $ref: "#/components/parameters/CategoryQuery"
+        - $ref: "#/components/parameters/BrandQuery"
+      responses:
+        "200":
+          description: Public catalogue result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogueResult"
+  /catalogue/{productId}:
+    get:
+      operationId: getPublicProduct
+      tags: [catalogue]
+      summary: Get a single published product
+      parameters:
+        - $ref: "#/components/parameters/ProductId"
+      responses:
+        "200":
+          description: Public product
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /catalogue/pdf:
+    post:
+      operationId: generateCataloguePdf
+      tags: [catalogue]
+      summary: Generate a branded admin-only PDF
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PdfRequest"
+      responses:
+        "200":
+          description: PDF generation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PdfResult"
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get catalogue settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update catalogue settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
 components:
+  parameters:
+    CollectionId:
+      name: collectionId
+      in: path
+      required: true
+      schema:
+        type: string
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+    CollectionQuery:
+      name: collectionId
+      in: query
+      required: false
+      schema:
+        type: string
+    GenderQuery:
+      name: gender
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [men, women, unknown]
+    CategoryQuery:
+      name: category
+      in: query
+      required: false
+      schema:
+        type: string
+        enum: [clothing, footwear, watches, bags, accessories, other]
+    BrandQuery:
+      name: brand
+      in: query
+      required: false
+      schema:
+        type: string
+    ReviewQuery:
+      name: reviewed
+      in: query
+      required: false
+      schema:
+        type: boolean
+    PublishedQuery:
+      name: published
+      in: query
+      required: false
+      schema:
+        type: boolean
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +385,171 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    Collection:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        slug: { type: string }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+        isPublished: { type: boolean }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+      required: [id, name, slug, isPublished, createdAt, updatedAt]
+    CollectionInput:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        slug: { type: string, minLength: 1 }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+      required: [name, slug]
+    CollectionUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        slug: { type: string, minLength: 1 }
+        startDate: { type: ["string", "null"], format: date }
+        endDate: { type: ["string", "null"], format: date }
+        isPublished: { type: boolean }
+    ProductImage:
+      type: object
+      properties:
+        id: { type: string }
+        imagePath: { type: string }
+        isPrimary: { type: boolean }
+        sortOrder: { type: integer }
+      required: [id, imagePath, isPrimary, sortOrder]
+    Product:
+      type: object
+      properties:
+        id: { type: string }
+        collectionId: { type: string }
+        gender: { type: string, enum: [men, women, unknown] }
+        category: { type: string, enum: [clothing, footwear, watches, bags, accessories, other] }
+        brand: { type: ["string", "null"] }
+        aiGender: { type: ["string", "null"] }
+        aiCategory: { type: ["string", "null"] }
+        aiBrand: { type: ["string", "null"] }
+        aiConfidence: { type: ["number", "null"] }
+        reviewed: { type: boolean }
+        isActive: { type: boolean }
+        isPublished: { type: boolean }
+        sortOrder: { type: integer }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        images:
+          type: array
+          items: { $ref: "#/components/schemas/ProductImage" }
+      required: [id, collectionId, gender, category, reviewed, isActive, isPublished, sortOrder, createdAt, updatedAt, images]
+    ProductInput:
+      type: object
+      properties:
+        collectionId: { type: string }
+        gender: { type: string, enum: [men, women, unknown] }
+        category: { type: string, enum: [clothing, footwear, watches, bags, accessories, other] }
+        brand: { type: ["string", "null"] }
+        imagePath: { type: string }
+        imageUrl: { type: ["string", "null"], format: uri }
+      required: [collectionId, gender, category, imagePath]
+    ProductUpdate:
+      type: object
+      properties:
+        gender: { type: string, enum: [men, women, unknown] }
+        category: { type: string, enum: [clothing, footwear, watches, bags, accessories, other] }
+        brand: { type: ["string", "null"] }
+        reviewed: { type: boolean }
+        isActive: { type: boolean }
+        isPublished: { type: boolean }
+        sortOrder: { type: integer }
+    BulkProductUpdate:
+      type: object
+      properties:
+        productIds:
+          type: array
+          items: { type: string }
+          minItems: 1
+        gender: { type: ["string", "null"], enum: [men, women, unknown, null] }
+        category: { type: ["string", "null"], enum: [clothing, footwear, watches, bags, accessories, other, null] }
+        brand: { type: ["string", "null"] }
+        reviewed: { type: ["boolean", "null"] }
+        isPublished: { type: ["boolean", "null"] }
+      required: [productIds]
+    UploadBatch:
+      type: object
+      properties:
+        collectionId: { type: string }
+        batchHint: { type: string, enum: [mixed, men, women] }
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              imagePath: { type: string }
+              imageUrl: { type: ["string", "null"], format: uri }
+            required: [imagePath]
+          minItems: 1
+      required: [collectionId, batchHint, images]
+    DashboardSummary:
+      type: object
+      properties:
+        collection: { $ref: "#/components/schemas/Collection" }
+        totalUploaded: { type: integer }
+        men: { type: integer }
+        women: { type: integer }
+        unknown: { type: integer }
+        needsReview: { type: integer }
+        published: { type: integer }
+        categories:
+          type: object
+          additionalProperties: { type: integer }
+      required: [collection, totalUploaded, men, women, unknown, needsReview, published, categories]
+    CatalogueResult:
+      type: object
+      properties:
+        collection: { $ref: "#/components/schemas/Collection" }
+        products:
+          type: array
+          items: { $ref: "#/components/schemas/Product" }
+        availableBrands:
+          type: array
+          items: { type: string }
+      required: [collection, products, availableBrands]
+    PdfRequest:
+      type: object
+      properties:
+        title: { type: string }
+        productIds:
+          type: array
+          items: { type: string }
+          minItems: 1
+      required: [title, productIds]
+    PdfResult:
+      type: object
+      properties:
+        status: { type: string, enum: [ready, generating] }
+        downloadUrl: { type: ["string", "null"], format: uri }
+        title: { type: string }
+      required: [status, title]
+    Settings:
+      type: object
+      properties:
+        whatsappNumber: { type: string }
+        businessName: { type: string }
+        tagline: { type: string }
+      required: [whatsappNumber, businessName, tagline]
+    SettingsUpdate:
+      type: object
+      properties:
+        whatsappNumber: { type: string }
+        businessName: { type: string }
+        tagline: { type: string }
 

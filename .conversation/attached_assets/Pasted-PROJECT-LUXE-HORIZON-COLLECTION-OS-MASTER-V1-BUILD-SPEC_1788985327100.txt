@@ -1,0 +1,1209 @@
+PROJECT: LUXE HORIZON COLLECTION OS
+
+MASTER V1 BUILD SPECIFICATION — LOCKED
+
+You are building a production-ready, mobile-first catalogue management application for Luxe Horizon, a luxury shopping business.
+
+IMPORTANT:
+
+This specification is LOCKED for V1.
+
+Do not invent additional features.
+
+Do not change the business workflow.
+
+Do not add e-commerce checkout.
+
+Do not add dealer management.
+
+Do not add customer accounts.
+
+Do not add automatic WhatsApp broadcasting.
+
+Do not add customer-visible product codes.
+
+Do not add pricing unless explicitly requested later.
+
+Do not replace the supplied Luxe Horizon branding.
+
+Do not redraw, reinterpret or regenerate the supplied logo.
+
+If something necessary is technically missing, flag it before changing the architecture.
+
+==================================================
+
+1. PURPOSE
+
+==================================================
+
+Luxe Horizon currently receives large numbers of product images through WhatsApp broadcasts, WhatsApp Status screenshots, friends and other miscellaneous sources.
+
+The owner currently:
+
+1. Saves product images/screenshots to the phone gallery.
+
+2. Accumulates them throughout the week.
+
+3. Separates products into Men's and Women's collections.
+
+4. Creates large PDF catalogues, sometimes containing 100+ images/pages.
+
+5. Sends the PDF manually and individually to customers through WhatsApp.
+
+The purpose of this application is to dramatically simplify that process.
+
+The new workflow must be:
+
+SAVE IMAGES TO PHONE
+
+→ MOBILE UPLOAD
+
+→ AI-ASSISTED SORTING
+
+→ QUICK ADMIN REVIEW
+
+→ PUBLISH
+
+→ LIVE CUSTOMER CATALOGUE
+
+→ FILTERED LINKS / ADMIN PDF
+
+→ WHATSAPP PRODUCT ENQUIRY
+
+The owner will continue manually sending catalogue links/PDFs to customers through WhatsApp.
+
+DO NOT automate customer broadcasting.
+
+==================================================
+
+2. TWO EXPERIENCES
+
+==================================================
+
+The application contains two clearly separated experiences:
+
+A. PRIVATE ADMIN APPLICATION
+
+B. PUBLIC CUSTOMER CATALOGUE
+
+They use the same Luxe Horizon brand identity but have different purposes.
+
+The Admin application prioritizes speed and operational usability.
+
+The Customer Catalogue prioritizes luxury presentation, simplicity and product discovery.
+
+==================================================
+
+3. LUXE HORIZON BRANDING
+
+==================================================
+
+Use the official Luxe Horizon brand assets already uploaded to this AI Studio project.
+
+The supplied assets are the absolute visual reference.
+
+Brand identity includes:
+
+LUXE HORIZON
+
+Tagline:
+
+"The pinnacle of luxury shopping"
+
+Visual direction:
+
+- sophisticated luxury
+
+- editorial
+
+- timeless
+
+- understated
+
+- premium
+
+- generous whitespace
+
+- image-led
+
+Core visual palette from supplied brand identity:
+
+- deep burgundy / wine
+
+- warm ivory / cream
+
+- black
+
+- restrained champagne-gold accent
+
+Typography reference:
+
+Playfair Display Regular is explicitly shown in the supplied brand identity.
+
+Use an appropriate restrained supporting sans-serif for functional UI text where required.
+
+IMPORTANT:
+
+Do NOT recreate the logo with text or AI-generated graphics.
+
+Use the supplied official logo assets.
+
+Do NOT invent exact brand HEX values if they cannot be reliably determined from the supplied identity.
+
+Keep brand color implementation centralized as design tokens/CSS variables so exact approved HEX values can be updated easily later.
+
+The Admin, Customer Catalogue and generated PDFs must all feel like Luxe Horizon.
+
+Avoid:
+
+- generic SaaS appearance
+
+- bright gradients
+
+- neon
+
+- excessive glassmorphism
+
+- random colors
+
+- oversized rounded cards everywhere
+
+- generic e-commerce templates
+
+- visual clutter
+
+==================================================
+
+4. MOBILE-FIRST REQUIREMENT
+
+==================================================
+
+This is critical.
+
+The owner primarily receives and saves collection images on a PHONE.
+
+The Admin application MUST therefore be genuinely mobile-first.
+
+The complete core workflow must work comfortably from a mobile browser:
+
+Upload
+
+→ Select many photos from phone gallery
+
+→ AI sorting
+
+→ Review
+
+→ Correct classifications
+
+→ Publish
+
+→ Copy catalogue link
+
+→ Download PDF
+
+Desktop must also work beautifully, but mobile administration is NOT a secondary experience.
+
+Use large touch targets and fast bulk actions.
+
+==================================================
+
+5. ADMIN AUTHENTICATION
+
+==================================================
+
+The Admin application is private.
+
+Use Supabase Authentication.
+
+An admin user has already been manually created in Supabase.
+
+Customers do NOT log in.
+
+Public catalogue visitors do NOT require accounts.
+
+Admin routes must be protected.
+
+==================================================
+
+6. ADMIN INFORMATION ARCHITECTURE
+
+==================================================
+
+Create these primary Admin areas:
+
+DASHBOARD
+
+UPLOAD
+
+REVIEW
+
+PRODUCTS
+
+COLLECTIONS
+
+CATALOGUE / PUBLISH
+
+SETTINGS
+
+Do not add unnecessary CRM, dealer, customer or sales modules.
+
+==================================================
+
+7. ADMIN DASHBOARD
+
+==================================================
+
+Create a premium but operational Luxe Horizon dashboard.
+
+Show useful collection information such as:
+
+Current collection
+
+Total uploaded products
+
+Men
+
+Women
+
+Needs Review
+
+Published products
+
+Category summary:
+
+Clothing
+
+Footwear
+
+Watches
+
+Bags
+
+Accessories
+
+Other
+
+Include prominent actions:
+
+UPLOAD PHOTOS
+
+REVIEW PRODUCTS
+
+PUBLISH COLLECTION
+
+The dashboard must be excellent on mobile.
+
+==================================================
+
+8. MOBILE IMAGE UPLOAD
+
+==================================================
+
+Admin must be able to tap:
+
++ UPLOAD PHOTOS
+
+and select many images directly from the phone gallery.
+
+Support batch uploads.
+
+Images may include:
+
+dealer product photographs
+
+WhatsApp broadcast images
+
+WhatsApp Status screenshots
+
+screenshots from friends
+
+miscellaneous product images
+
+DO NOT require a source/dealer.
+
+DO NOT create dealer tracking.
+
+DO NOT require product names.
+
+DO NOT require product codes.
+
+During upload provide:
+
+AUTO SORT WITH AI
+
+and optional batch hints:
+
+MIXED
+
+MEN ONLY
+
+WOMEN ONLY
+
+If MEN ONLY or WOMEN ONLY is selected, AI should not waste effort determining gender for that batch.
+
+It should still classify category and brand.
+
+==================================================
+
+9. AI CLASSIFICATION
+
+==================================================
+
+AI should ASSIST with three classifications:
+
+GENDER:
+
+- men
+
+- women
+
+- unknown
+
+CATEGORY:
+
+- clothing
+
+- footwear
+
+- watches
+
+- bags
+
+- accessories
+
+- other
+
+BRAND:
+
+Recognize the likely fashion/luxury brand when visually supported.
+
+Examples may include:
+
+Rolex
+
+Cartier
+
+Patek Philippe
+
+Audemars Piguet
+
+Richard Mille
+
+Louis Vuitton
+
+Chanel
+
+Dior
+
+Hermès
+
+Gucci
+
+Prada
+
+etc.
+
+However:
+
+NEVER force a brand guess.
+
+If uncertain, classify:
+
+Unknown
+
+AI classifications are suggestions.
+
+The human Admin remains authoritative.
+
+AI must NEVER permanently prevent manual correction.
+
+==================================================
+
+10. REVIEW WORKFLOW
+
+==================================================
+
+After upload and AI processing, display:
+
+Total uploaded
+
+Men count
+
+Women count
+
+Unknown count
+
+and category counts.
+
+Provide a visual product grid.
+
+Admin must be able to:
+
+select one product
+
+select multiple products
+
+bulk assign Men
+
+bulk assign Women
+
+bulk change Category
+
+bulk change Brand
+
+mark Unknown
+
+delete
+
+publish/unpublish where appropriate
+
+Provide a prominent:
+
+REVIEW UNSURE
+
+workflow for AI classifications that need confirmation.
+
+The goal is for Admin to correct only AI mistakes rather than manually organize every image.
+
+==================================================
+
+11. PRODUCT IMAGE GROUPING
+
+==================================================
+
+One catalogue product may contain multiple images.
+
+Examples:
+
+front
+
+side
+
+detail
+
+packaging
+
+different view
+
+The system must support multiple images attached to one product.
+
+One image is marked PRIMARY.
+
+Customer sees the primary image in catalogue grids.
+
+Product detail allows swiping/viewing all attached images.
+
+Do not make grouping unnecessarily complicated on mobile.
+
+==================================================
+
+12. COLLECTIONS
+
+==================================================
+
+Admin creates/publishes collections such as:
+
+New Collection — 07 September 2026
+
+Products can belong to a collection.
+
+The system must support recurring weekly collections.
+
+Collection history should remain available to Admin.
+
+Publishing a new collection must NOT destroy previous database records.
+
+==================================================
+
+13. CUSTOMER CATALOGUE
+
+==================================================
+
+Create a premium public Luxe Horizon catalogue optimized primarily for mobile devices opened from WhatsApp.
+
+NO LOGIN.
+
+Customer home experience should clearly allow:
+
+MEN'S COLLECTION
+
+WOMEN'S COLLECTION
+
+Then allow filtering/browsing by:
+
+ALL
+
+CLOTHING
+
+FOOTWEAR
+
+WATCHES
+
+BAGS
+
+ACCESSORIES
+
+Within categories allow filtering by BRAND.
+
+Example:
+
+MEN
+
+→ WATCHES
+
+→ ROLEX
+
+The interface should be extremely image-led.
+
+Product cards should NOT display internal IDs or product codes.
+
+Avoid unnecessary product descriptions.
+
+Do not make it feel like a conventional online store.
+
+There is NO checkout.
+
+==================================================
+
+14. PRODUCT DETAIL
+
+==================================================
+
+When a customer taps a product:
+
+Show:
+
+large primary image
+
+additional product images if available
+
+swipe/gallery controls
+
+brand only if appropriate
+
+ENQUIRE ON WHATSAPP
+
+Do NOT show internal database IDs.
+
+Do NOT show customer-facing product codes.
+
+Do NOT show dealer/source information.
+
+==================================================
+
+15. WHATSAPP ENQUIRY
+
+==================================================
+
+The customer's goal is to show Luxe Horizon exactly which visual product they are interested in.
+
+IMPORTANT TECHNICAL CONSTRAINT:
+
+A normal web page cannot silently attach a local image file directly into a WhatsApp conversation.
+
+Therefore implement the enquiry using a unique public product URL.
+
+When customer taps:
+
+ENQUIRE ON WHATSAPP
+
+open Luxe Horizon's WhatsApp conversation with a prefilled message similar to:
+
+"Hi Luxe Horizon, I'm interested in this item 👇
+
+[UNIQUE PRODUCT URL]
+
+Is it available?"
+
+Each public product URL must have correct social/Open Graph metadata so that WhatsApp can generate a rich preview using the exact PRIMARY product image where supported.
+
+The product link must open the exact product.
+
+The Luxe Horizon WhatsApp number must be configurable in Settings/environment configuration rather than hard-coded throughout components.
+
+==================================================
+
+16. FILTERABLE / SHAREABLE LINKS
+
+==================================================
+
+This is a CORE V1 requirement.
+
+Admin must be able to create/copy catalogue links representing filtered views.
+
+Examples:
+
+All Men's Collection
+
+Men → Watches
+
+Men → Watches → Rolex
+
+Women → Bags
+
+Women → Bags → Chanel
+
+etc.
+
+A customer opening the link should see ONLY products matching that filter.
+
+Brand/category links should be reusable and dynamic where appropriate.
+
+For example, a Rolex catalogue link should show currently active/published Rolex products without requiring a completely new website page to be manually created every week.
+
+Provide Admin action:
+
+COPY LINK
+
+on relevant filtered catalogue views.
+
+==================================================
+
+17. ADMIN-ONLY PDF GENERATION
+
+==================================================
+
+PDF download is ADMIN ONLY.
+
+Do NOT show a PDF download button to public catalogue customers.
+
+Admin must be able to generate a branded Luxe Horizon PDF from the currently selected/filtered product set.
+
+Examples:
+
+Men → Download PDF
+
+Men → Watches → Download PDF
+
+Men → Watches → Rolex → Download PDF
+
+Women → Bags → Chanel → Download PDF
+
+Current Weekly Men's Collection → Download PDF
+
+Current Weekly Women's Collection → Download PDF
+
+The PDF must use Luxe Horizon branding.
+
+It should include:
+
+Luxe Horizon cover
+
+appropriate catalogue/filter title
+
+clean premium product presentation
+
+product imagery
+
+category/brand organization where appropriate
+
+Luxe Horizon visual identity
+
+Avoid internal IDs and dealer information.
+
+The PDF should be practical for manual WhatsApp sending.
+
+==================================================
+
+18. MANUAL CLIENT SENDING
+
+==================================================
+
+Do NOT build automated WhatsApp broadcasting.
+
+Do NOT build customer recipient lists for sending.
+
+Do NOT integrate unofficial WhatsApp automation.
+
+The owner will continue manually sending links or PDFs individually to customers through WhatsApp.
+
+The app's responsibility is to make:
+
+COPY LINK
+
+and
+
+DOWNLOAD PDF
+
+extremely easy.
+
+==================================================
+
+19. EXISTING SUPABASE BACKEND
+
+==================================================
+
+IMPORTANT:
+
+A Supabase project ALREADY EXISTS.
+
+DO NOT create another Supabase project.
+
+DO NOT replace the database.
+
+DO NOT invent a different schema without explicit approval.
+
+The following tables already exist:
+
+----------------------------------------
+
+TABLE: collections
+
+----------------------------------------
+
+id uuid primary key
+
+name text not null
+
+slug text unique not null
+
+start_date date
+
+end_date date
+
+is_published boolean default false
+
+published_at timestamptz
+
+created_at timestamptz
+
+updated_at timestamptz
+
+----------------------------------------
+
+TABLE: products
+
+----------------------------------------
+
+id uuid primary key
+
+collection_id uuid
+
+references collections(id)
+
+gender:
+
+men
+
+women
+
+unknown
+
+category:
+
+clothing
+
+footwear
+
+watches
+
+bags
+
+accessories
+
+other
+
+brand text
+
+ai_gender
+
+ai_category
+
+ai_brand
+
+ai_confidence
+
+reviewed boolean
+
+is_active boolean
+
+is_published boolean
+
+sort_order integer
+
+created_at
+
+updated_at
+
+----------------------------------------
+
+TABLE: product_images
+
+----------------------------------------
+
+id uuid primary key
+
+product_id uuid
+
+references products(id)
+
+image_path text
+
+is_primary boolean
+
+sort_order integer
+
+created_at
+
+==================================================
+
+20. SUPABASE STORAGE
+
+==================================================
+
+An existing PRIVATE Supabase Storage bucket already exists:
+
+product-images
+
+Do not create a replacement bucket.
+
+Admin authenticated users have policies allowing:
+
+SELECT
+
+INSERT
+
+UPDATE
+
+DELETE
+
+The customer catalogue must NOT require making the entire storage bucket public.
+
+Use secure server-side signed URL generation for customer-accessible images where required.
+
+==================================================
+
+21. DATABASE SECURITY
+
+==================================================
+
+RLS is already enabled on:
+
+collections
+
+products
+
+product_images
+
+Existing intent:
+
+ANON PUBLIC:
+
+Can read published collections.
+
+Can read products only when:
+
+is_published = true
+
+AND
+
+is_active = true
+
+Can read product_images only when their parent product is active and published.
+
+AUTHENTICATED:
+
+Admin can manage collections/products/product_images.
+
+Do not disable RLS.
+
+Do not solve access problems by making the database unrestricted.
+
+==================================================
+
+22. SUPABASE ENVIRONMENT VARIABLES
+
+==================================================
+
+Use environment variables.
+
+Expected public variables:
+
+NEXT_PUBLIC_SUPABASE_URL
+
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+
+Never expose Supabase secret/service-role credentials in browser code.
+
+==================================================
+
+23. TECHNICAL DIRECTION
+
+==================================================
+
+Build with a clean modern React/Next.js-compatible architecture suitable for eventual GitHub + Vercel deployment.
+
+Keep components modular.
+
+Separate:
+
+admin components
+
+catalogue components
+
+Supabase/data utilities
+
+AI classification logic
+
+PDF generation
+
+shared Luxe Horizon design tokens
+
+Do not tightly couple everything into one giant component.
+
+==================================================
+
+24. AI IMPLEMENTATION
+
+==================================================
+
+Design AI classification as a replaceable service layer.
+
+It receives uploaded product imagery and returns structured suggestions:
+
+gender
+
+category
+
+brand
+
+confidence
+
+Do NOT make the entire application dependent on AI availability.
+
+If AI fails or quota is unavailable:
+
+upload must still succeed
+
+Admin must still be able to manually classify products.
+
+This is essential.
+
+==================================================
+
+25. PERFORMANCE
+
+==================================================
+
+The application may handle 100+ product photographs in a weekly collection.
+
+Therefore:
+
+use efficient thumbnails
+
+avoid loading original full-resolution images unnecessarily
+
+lazy-load catalogue imagery
+
+optimize mobile rendering
+
+show upload progress
+
+handle batch uploads gracefully
+
+do not freeze the UI during large uploads
+
+==================================================
+
+26. STATES THAT MUST BE DESIGNED
+
+==================================================
+
+Create intentional UI for:
+
+empty collection
+
+uploading
+
+AI processing
+
+AI failed
+
+needs review
+
+no products in category
+
+no products for brand
+
+published
+
+unpublished
+
+image upload error
+
+offline/network error
+
+PDF generating
+
+PDF ready
+
+Do not leave raw technical errors exposed to customers.
+
+==================================================
+
+27. RESPONSIVE BEHAVIOR
+
+==================================================
+
+ADMIN:
+
+Mobile:
+
+primary operational experience
+
+Tablet:
+
+expanded grid and controls
+
+Desktop:
+
+more spacious management dashboard
+
+CUSTOMER CATALOGUE:
+
+Mobile:
+
+primary experience
+
+Desktop:
+
+premium responsive editorial catalogue
+
+==================================================
+
+28. SETTINGS
+
+==================================================
+
+Keep Settings minimal.
+
+Only include configuration genuinely required by V1, such as:
+
+Luxe Horizon WhatsApp enquiry number
+
+basic catalogue/business configuration if technically required
+
+Do NOT turn Settings into a large unrelated module.
+
+==================================================
+
+29. STRICTLY EXCLUDED FROM V1
+
+==================================================
+
+DO NOT BUILD:
+
+Dealer inbox
+
+Dealer management
+
+Dealer/source tracking
+
+Customer CRM
+
+Automatic WhatsApp broadcasting
+
+Customer accounts
+
+Checkout
+
+Shopping cart
+
+Payment gateway
+
+Inventory purchasing system
+
+Order management
+
+Customer-visible product IDs
+
+Customer-visible internal product codes
+
+Complex pricing system
+
+Unapproved analytics modules
+
+Unapproved sales modules
+
+==================================================
+
+30. UX PRINCIPLE
+
+==================================================
+
+Every feature must reduce the owner's current workload.
+
+The owner should be able to:
+
+1. Save images from WhatsApp/status to phone.
+
+2. Open Luxe Horizon Admin on phone.
+
+3. Upload all relevant images.
+
+4. Let AI suggest Gender + Category + Brand.
+
+5. Quickly review/correct.
+
+6. Publish.
+
+7. Copy the appropriate catalogue link OR download a filtered PDF.
+
+8. Manually send it to a customer through WhatsApp.
+
+A customer should be able to:
+
+1. Tap the link from WhatsApp.
+
+2. Browse a beautiful Luxe Horizon catalogue.
+
+3. Filter naturally.
+
+4. Tap a product.
+
+5. Enquire through WhatsApp with the exact product link/visual context.
+
+==================================================
+
+31. INITIAL BUILD REQUEST
+
+==================================================
+
+Build the complete V1 application foundation according to this specification.
+
+Prioritize:
+
+1. architecture
+
+2. mobile-first Admin UX
+
+3. customer catalogue UX
+
+4. Luxe Horizon brand fidelity
+
+5. correct Supabase integration points
+
+6. clean responsive implementation
+
+Do NOT replace the uploaded Luxe Horizon identity with generated branding.
+
+Do NOT add functionality outside this specification.
+
+Where actual Supabase credentials or deployment-specific values are required, use environment variables/placeholders rather than inventing credentials.
+
+After building, provide a concise implementation summary identifying:
+
+- routes created
+
+- major components
+
+- Supabase integration points
+
+- AI classification implementation
+
+- PDF implementation
+
+- anything that still requires environment/configuration values
+
+Do not propose additional product features at the end.
