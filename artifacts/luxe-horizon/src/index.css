@@ -62,9 +62,9 @@
   --app-font-sans: 'DM Sans', sans-serif;
   --app-font-serif: 'Playfair Display', Georgia, serif;
   --app-font-mono: 'DM Mono', monospace;
-  --radius: 0.65rem;
-  --elevate-1: rgba(66, 25, 33, 0.04);
-  --elevate-2: rgba(66, 25, 33, 0.08);
+  --radius: 0.55rem;
+  --elevate-1: rgba(66, 25, 33, 0.035);
+  --elevate-2: rgba(66, 25, 33, 0.07);
 }
 
 .dark {
@@ -97,8 +97,12 @@
 @layer base {
   * { @apply border-border; }
   html { scroll-behavior: smooth; }
-  body { @apply font-sans antialiased bg-background text-foreground; }
+  body { @apply font-sans antialiased bg-background text-foreground; text-rendering: optimizeLegibility; }
   button, a, input, select { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
@@ -109,16 +113,32 @@
     position: fixed;
     pointer-events: none;
     inset: 0;
-    opacity: .035;
+    opacity: .02;
     z-index: 50;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
   }
-  .shadow-editorial { box-shadow: 0 18px 40px rgba(58, 24, 31, .09); }
+  .shadow-editorial { box-shadow: 0 14px 34px rgba(58, 24, 31, .075); }
   .animate-rise { animation: rise .55s cubic-bezier(.22,.7,.2,1) both; }
   .animate-fade { animation: fade .45s ease both; }
   .delay-1 { animation-delay: 80ms; }
   .delay-2 { animation-delay: 160ms; }
   .delay-3 { animation-delay: 240ms; }
+}
+
+@media (max-width: 640px) {
+  [data-testid^='select-catalogue-'] {
+    height: 2.25rem !important;
+    padding-left: .7rem !important;
+    padding-right: 1.8rem !important;
+    font-size: .7rem !important;
+    letter-spacing: .01em;
+  }
+
+  [data-testid='link-whatsapp-enquiry'] {
+    min-height: 3.25rem;
+    font-size: .7rem;
+    letter-spacing: .1em;
+  }
 }
 
 @keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
