@@ -38,6 +38,17 @@ html.dark textarea {
   color: var(--lh-ink);
 }
 
+/* Make the publication date read as purposeful collection metadata, not a floating date. */
+html[data-app-route='catalogue'] main > section:first-child h1 ~ p:first-of-type::before,
+html[data-app-route='catalogue'] main > section:first-child h1:first-of-type + p::before {
+  content: '';
+}
+
+html[data-app-route='catalogue'] main > section:first-child .text-\[10px\]::before {
+  content: 'UPDATED · ';
+  opacity: .72;
+}
+
 /* Mobile hero: retain editorial scale but stop the title overpowering the image. */
 @media (max-width: 640px) {
   html[data-app-route='catalogue'] main > section:first-child h1 {
