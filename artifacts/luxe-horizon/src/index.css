@@ -34,30 +34,42 @@
 }
 
 :root {
+  /* Luxe Horizon master visual system — shared by client, admin and PDF UI. */
+  --lh-burgundy: #642536;
+  --lh-burgundy-deep: #4d1d2a;
+  --lh-burgundy-soft: #7a3346;
+  --lh-ivory: #f3eee6;
+  --lh-ivory-light: #faf6f0;
+  --lh-ivory-deep: #e9dfd4;
+  --lh-champagne: #d8b87f;
+  --lh-ink: #241b18;
+  --lh-muted-ink: #806b61;
+  --lh-border: #d8cbbf;
+
   --background: 36 33% 95%;
   --foreground: 20 16% 13%;
-  --border: 33 17% 83%;
-  --input: 33 17% 83%;
-  --ring: 346 53% 25%;
-  --card: 38 38% 97%;
+  --border: 31 20% 80%;
+  --input: 31 20% 80%;
+  --ring: 346 46% 27%;
+  --card: 36 38% 97%;
   --card-foreground: 20 16% 13%;
-  --card-border: 33 21% 86%;
-  --primary: 346 53% 25%;
+  --card-border: 31 22% 84%;
+  --primary: 346 46% 27%;
   --primary-foreground: 36 33% 95%;
-  --secondary: 31 25% 88%;
+  --secondary: 31 28% 89%;
   --secondary-foreground: 20 16% 13%;
-  --muted: 33 19% 90%;
-  --muted-foreground: 25 10% 45%;
-  --accent: 37 54% 72%;
+  --muted: 31 23% 91%;
+  --muted-foreground: 22 13% 44%;
+  --accent: 38 48% 67%;
   --accent-foreground: 20 16% 13%;
   --destructive: 0 62% 42%;
   --destructive-foreground: 38 38% 97%;
-  --sidebar: 347 47% 20%;
+  --sidebar: 346 45% 22%;
   --sidebar-foreground: 36 33% 95%;
-  --sidebar-border: 347 31% 31%;
-  --sidebar-primary: 37 54% 72%;
+  --sidebar-border: 346 29% 31%;
+  --sidebar-primary: 38 48% 67%;
   --sidebar-primary-foreground: 20 16% 13%;
-  --sidebar-accent: 347 37% 28%;
+  --sidebar-accent: 346 34% 29%;
   --sidebar-accent-foreground: 36 33% 95%;
   --app-font-sans: 'DM Sans', sans-serif;
   --app-font-serif: 'Playfair Display', Georgia, serif;
@@ -75,20 +87,20 @@
   --card: 24 15% 17%;
   --card-foreground: 36 33% 95%;
   --card-border: 25 12% 29%;
-  --primary: 37 54% 72%;
+  --primary: 38 48% 67%;
   --primary-foreground: 20 16% 13%;
   --secondary: 25 12% 26%;
   --secondary-foreground: 36 33% 95%;
   --muted: 25 12% 23%;
   --muted-foreground: 33 13% 70%;
-  --accent: 346 53% 35%;
+  --accent: 346 46% 34%;
   --accent-foreground: 36 33% 95%;
   --destructive: 0 62% 48%;
   --destructive-foreground: 36 33% 95%;
   --sidebar: 20 16% 10%;
   --sidebar-foreground: 36 33% 95%;
   --sidebar-border: 25 12% 25%;
-  --sidebar-primary: 37 54% 72%;
+  --sidebar-primary: 38 48% 67%;
   --sidebar-primary-foreground: 20 16% 13%;
   --sidebar-accent: 25 12% 22%;
   --sidebar-accent-foreground: 36 33% 95%;
@@ -97,12 +109,56 @@
 @layer base {
   * { @apply border-border; }
   html { scroll-behavior: smooth; }
-  body { @apply font-sans antialiased bg-background text-foreground; text-rendering: optimizeLegibility; }
-  button, a, input, select { -webkit-tap-highlight-color: transparent; }
-  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid hsl(var(--ring));
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    color: var(--lh-ink);
+    background-color: var(--lh-ivory);
+    text-rendering: optimizeLegibility;
+  }
+  button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--lh-burgundy);
     outline-offset: 2px;
   }
+  ::selection { background: rgba(100, 37, 54, .16); color: var(--lh-ink); }
+}
+
+@layer components {
+  .lh-display {
+    font-family: var(--app-font-serif);
+    color: var(--lh-ink);
+    letter-spacing: -.025em;
+  }
+  .lh-label {
+    font-family: var(--app-font-mono);
+    color: var(--lh-burgundy);
+    font-size: .625rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+  .lh-primary-action {
+    background: var(--lh-burgundy);
+    color: var(--lh-ivory-light);
+    border: 1px solid var(--lh-burgundy);
+    transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .lh-primary-action:hover { background: var(--lh-burgundy-deep); border-color: var(--lh-burgundy-deep); }
+  .lh-secondary-action {
+    background: var(--lh-ivory-light);
+    color: var(--lh-burgundy);
+    border: 1px solid var(--lh-border);
+  }
+  .lh-panel {
+    background: var(--lh-ivory-light);
+    border: 1px solid var(--lh-border);
+    box-shadow: 0 14px 34px rgba(58, 24, 31, .055);
+  }
+  .lh-burgundy-panel {
+    background: var(--lh-burgundy);
+    color: var(--lh-ivory-light);
+  }
+  .lh-muted { color: var(--lh-muted-ink); }
+  .lh-champagne { color: var(--lh-champagne); }
 }
 
 @layer utilities {
@@ -117,7 +173,7 @@
     z-index: 50;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
   }
-  .shadow-editorial { box-shadow: 0 14px 34px rgba(58, 24, 31, .075); }
+  .shadow-editorial { box-shadow: 0 14px 34px rgba(58, 24, 31, .065); }
   .animate-rise { animation: rise .55s cubic-bezier(.22,.7,.2,1) both; }
   .animate-fade { animation: fade .45s ease both; }
   .delay-1 { animation-delay: 80ms; }
