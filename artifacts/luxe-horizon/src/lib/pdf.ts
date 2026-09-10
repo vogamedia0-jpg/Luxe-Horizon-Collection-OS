@@ -113,10 +113,10 @@ export async function generateBrandedCataloguePdf(
   options: PdfOptions = {},
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: false });
-  const coverImage = options.coverImage || '/assets/hero.png';
+  const coverImage = options.coverImage || '/assets/brand-board.png';
   const publishedDate = formatPublishedDate(options.publishedAt);
 
-  // COVER — fixed design system, dynamic collection date only.
+  // COVER — fixed Luxe Horizon composition, with only collection metadata changing.
   drawPageBase(doc);
   doc.setFillColor(COLORS.burgundyDeep);
   doc.roundedRect(10, 13, 190, 271, 4, 4, 'F');
@@ -153,7 +153,6 @@ export async function generateBrandedCataloguePdf(
     doc.rect(98, 13, 102, 271, 'F');
   }
 
-  // Burgundy editorial panel over the left side, echoing the locked New Collection view.
   doc.setFillColor(COLORS.burgundyDeep);
   doc.rect(10, 13, 96, 271, 'F');
   doc.setTextColor(COLORS.ivoryLight);
@@ -187,7 +186,8 @@ export async function generateBrandedCataloguePdf(
   doc.setTextColor('#D8C9BF');
   doc.text('The pinnacle of luxury shopping.', 24, 271);
 
-  // Flatten every original uploaded product image. No AI generation, no retouching, no cropping.
+  // Use the original uploaded product files exactly as stored. They are never AI-generated,
+  // retouched or cropped by the PDF generator; contain-fit preserves the whole source image.
   const entries = products.flatMap((product) => {
     const images = [...(product.images || [])].sort((a, b) => {
       if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
@@ -196,6 +196,7 @@ export async function generateBrandedCataloguePdf(
     return images.map((image) => ({ product, image }));
   });
 
+  // Exactly two product photos per page for comfortable viewing.
   for (let index = 0; index < entries.length; index += 2) {
     doc.addPage();
     drawPageBase(doc);
