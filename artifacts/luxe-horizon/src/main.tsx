@@ -1,12 +1,14 @@
 import { createRoot } from 'react-dom/client';
 
-import AdminApp from './AdminApp';
+import App from './App';
+import AdminAppV2 from './AdminAppV2';
 import PublicCatalogue from './PublicCatalogue';
 import { ErrorBoundary } from '@/components/error-boundary';
 
 import './index.css';
 
 const path = window.location.pathname;
+const isPublicCatalogueRoute = path === '/' || path === '/catalogue' || path.startsWith('/catalogue/product/');
 const isAdminRoute = path.startsWith('/admin');
 
 createRoot(document.getElementById('root')!, {
@@ -16,6 +18,6 @@ createRoot(document.getElementById('root')!, {
   },
 }).render(
   <ErrorBoundary>
-    {isAdminRoute ? <AdminApp /> : <PublicCatalogue />}
+    {isPublicCatalogueRoute ? <PublicCatalogue /> : isAdminRoute ? <AdminAppV2 /> : <App />}
   </ErrorBoundary>,
 );
