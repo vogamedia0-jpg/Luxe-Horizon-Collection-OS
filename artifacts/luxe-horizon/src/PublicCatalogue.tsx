@@ -36,6 +36,7 @@ type CatalogueResponse = {
 
 const logo = '/assets/logo.png';
 const heroImage = '/assets/hero.png';
+const whatsappFallback = '971559020956';
 
 const categoryLabels: Record<string, string> = {
   clothing: 'Clothing',
@@ -74,11 +75,15 @@ function formatPublishedDate(value?: string | null) {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).format(date).toUpperCase();
 }
 
+function productUrl(productId: string) {
+  return `/product/${encodeURIComponent(productId)}`;
+}
+
 function BrandHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--lh-border)] bg-[rgba(233,223,210,.96)] backdrop-blur-xl">
       <div className="mx-auto flex h-[72px] max-w-[1320px] items-center justify-between px-5 sm:h-[78px] sm:px-8 lg:px-10">
-        <a href="/catalogue" aria-label="Luxe Horizon catalogue">
+        <a href="/" aria-label="Luxe Horizon catalogue">
           <img src={logo} alt="Luxe Horizon" className="h-11 w-auto object-contain sm:h-12" />
         </a>
         <span className="hidden text-[9px] font-semibold uppercase tracking-[.22em] text-[var(--lh-burgundy)] sm:block">Catalogue</span>
@@ -196,7 +201,7 @@ function CatalogueList() {
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(39,5,9,.88)_0%,rgba(39,5,9,.70)_32%,rgba(39,5,9,.12)_68%,rgba(39,5,9,.03)_100%)]" />
           <div className="absolute inset-0 flex items-end p-7 text-[var(--lh-ivory-light)] sm:items-center sm:p-10 lg:p-14">
             <div className="max-w-[520px]">
-              {publishedDate && <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-[var(--lh-champagne)]">{publishedDate}</p>}
+              {publishedDate && <p className="text-[10px] font-semibold uppercase tracking-[.24em] text-[var(--lh-champagne)]">UPDATED · {publishedDate}</p>}
               <h1 className="mt-4 font-display text-[48px] leading-[.98] tracking-[-.035em] sm:text-6xl lg:text-7xl">New<br />Collection</h1>
               <p className="mt-5 max-w-sm text-[13px] leading-6 text-[rgba(244,237,228,.80)]">A live catalogue of our latest arrivals, Updated every few days.</p>
               <a href="#latest-arrivals" className="mt-7 inline-flex h-11 items-center rounded-full bg-[var(--lh-ivory-light)] px-5 text-[11px] font-semibold uppercase tracking-[.10em] text-[var(--lh-burgundy)]">Explore Collection</a>
@@ -240,7 +245,7 @@ function CatalogueList() {
         ) : (
           <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:grid-cols-3 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
             {visible.map((product) => (
-              <a key={product.id} href={`/catalogue/product/${product.id}`} className="group block min-w-0">
+              <a key={product.id} href={productUrl(product.id)} className="group block min-w-0">
                 <div className="relative aspect-[4/5] overflow-hidden rounded-[12px] bg-[var(--lh-ivory-deep)] sm:rounded-[14px]">
                   <img src={imageFor(product)} alt={product.brand || categoryLabels[product.category] || 'Luxe Horizon product'} className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.025]" loading="lazy" />
                 </div>
@@ -283,18 +288,20 @@ function ProductDetail({ productId }: { productId: string }) {
   if (error || !product) return <EmptyState error={error} />;
 
   const images = product.images?.length ? [...product.images].sort((a, b) => a.sortOrder - b.sortOrder) : [{ id: 'fallback', imagePath: heroImage, isPrimary: true, sortOrder: 0 }];
-  const whatsappNumber = (import.meta.env.VITE_LUXE_HORIZON_WHATSAPP || '').replace(/\D/g, '');
-  const publicUrl = `${window.location.origin}/catalogue/product/${product.id}`;
-  const message = `Hi Luxe Horizon, I'm interested in this item.\n\n${publicUrl}\n\nIs it available?`;
-  const whatsappHref = whatsappNumber ? `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}` : '';
+  const whatsappNumber = (import.meta.env.VITE_LUXE_HORIZON_WHATSAPP || whatsappFallback).replace(/\D/g, '');
+  const publicUrl = `https://luxehorizon.store${productUrl(product.id)}`;
+  const brandText = product.brand || 'Luxe Horizon item';
+  const categoryText = categoryLabels[product.category] || product.category || 'Product';
+  const message = `Hi Luxe Horizon, I'm interested in this item.\n\nBrand: ${brandText}\nCategory: ${categoryText}\nProduct link: ${publicUrl}\n\nPlease send me availability and details.`;
+  const whatsappHref = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
   return (
     <main className="mx-auto max-w-[1180px] px-5 pb-20 pt-7 sm:px-8 sm:pt-9 lg:px-10 lg:pt-11">
-      <a href="/catalogue" className="mb-6 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.1em] text-[var(--lh-burgundy)]"><ArrowLeft size={14} /> Back</a>
+      <a href="/" className="mb-6 inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[.1em] text-[var(--lh-burgundy)]"><ArrowLeft size={14} /> Back</a>
       <div className="grid gap-8 lg:grid-cols-[1.08fr_.92fr] lg:gap-12">
         <div>
           <div className="aspect-[4/5] overflow-hidden rounded-[16px] bg-[var(--lh-ivory-deep)] sm:rounded-[20px]">
-            <img src={images[activeImage]?.imagePath || heroImage} alt={product.brand || categoryLabels[product.category] || 'Luxe Horizon product'} className="h-full w-full object-cover" />
+            <img src={images[activeImage]?.imagePath || heroImage} alt={brandText} className="h-full w-full object-cover" />
           </div>
           {images.length > 1 && (
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
@@ -307,17 +314,13 @@ function ProductDetail({ productId }: { productId: string }) {
           )}
         </div>
         <div className="lg:sticky lg:top-28 lg:self-start lg:pt-5">
-          <p className="text-[9px] font-semibold uppercase tracking-[.20em] text-[var(--lh-burgundy)]">{categoryLabels[product.category] || product.category}</p>
-          <h1 className="mt-2 font-display text-5xl leading-tight text-[var(--lh-ink)] sm:text-6xl">{product.brand || 'Luxe Horizon'}</h1>
+          <p className="text-[9px] font-semibold uppercase tracking-[.20em] text-[var(--lh-burgundy)]">{categoryText}</p>
+          <h1 className="mt-2 font-display text-5xl leading-tight text-[var(--lh-ink)] sm:text-6xl">{brandText}</h1>
           <div className="mt-7 h-px bg-[var(--lh-border)]" />
           <p className="mt-6 max-w-md text-sm leading-7 text-[var(--lh-muted-ink)]">For availability and details, enquire directly on WhatsApp.</p>
-          {whatsappHref ? (
-            <a data-testid="link-whatsapp-enquiry" href={whatsappHref} target="_blank" rel="noreferrer" className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--lh-burgundy)] px-6 text-[12px] font-semibold text-[var(--lh-ivory-light)] transition hover:bg-[var(--lh-burgundy-soft)] sm:w-auto sm:min-w-[230px]">
-              <MessageCircle size={16} /> Enquire on WhatsApp
-            </a>
-          ) : (
-            <p className="mt-7 rounded-xl border border-[var(--lh-border)] bg-[var(--lh-ivory-light)] p-4 text-xs text-[var(--lh-muted-ink)]">WhatsApp enquiry is not configured yet.</p>
-          )}
+          <a data-testid="link-whatsapp-enquiry" href={whatsappHref} target="_blank" rel="noreferrer" className="mt-7 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--lh-burgundy)] px-6 text-[12px] font-semibold text-[var(--lh-ivory-light)] transition hover:bg-[var(--lh-burgundy-soft)] sm:w-auto sm:min-w-[230px]">
+            <MessageCircle size={16} /> Enquire on WhatsApp
+          </a>
         </div>
       </div>
     </main>
@@ -326,7 +329,7 @@ function ProductDetail({ productId }: { productId: string }) {
 
 export default function PublicCatalogue() {
   const path = window.location.pathname;
-  const productMatch = path.match(/^\/catalogue\/product\/([^/]+)$/);
+  const productMatch = path.match(/^\/catalogue\/product\/([^/]+)$/) || path.match(/^\/product\/([^/]+)$/);
 
   return (
     <div className="min-h-[100dvh] bg-[var(--lh-ivory)] text-[var(--lh-ink)]">
