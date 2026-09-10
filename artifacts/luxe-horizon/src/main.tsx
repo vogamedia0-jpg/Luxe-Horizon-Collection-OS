@@ -9,6 +9,7 @@ import PublicCatalogue from './PublicCatalogue';
 import { ErrorBoundary } from '@/components/error-boundary';
 
 import './index.css';
+import './qa-fixes.css';
 
 const path = window.location.pathname;
 const isPublicCatalogueRoute = path === '/' || path === '/catalogue' || path.startsWith('/catalogue/product/');
@@ -16,9 +17,10 @@ const isAdminRoute = path.startsWith('/admin');
 const isFastAdminRoute = path === '/admin/review' || path === '/admin/products';
 const isFastUploadRoute = path === '/admin/upload';
 
+document.documentElement.dataset.appRoute = isAdminRoute ? 'admin' : 'catalogue';
 document.title = isAdminRoute ? 'Luxe Horizon Admin' : 'Luxe Horizon';
 const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-if (favicon) favicon.href = `/favicon.svg?v=official-6${isAdminRoute ? '-admin' : '-catalogue'}`;
+if (favicon) favicon.href = `/favicon.svg?v=official-7${isAdminRoute ? '-admin' : '-catalogue'}`;
 
 createRoot(document.getElementById('root')!, {
   onCaughtError: (error, errorInfo) => {
