@@ -86,14 +86,15 @@ async function createCollection(request, env) {
 }
 
 async function createProductWithImages(cfg, collectionId, gender, imagePaths) {
-  // Only use columns verified to exist in the live products table.
   const productRows = await rest(cfg, '/rest/v1/products', {
     method: 'POST',
     body: JSON.stringify({
       collection_id: collectionId,
       gender,
       category: 'other',
-      brand: null,
+      // Live schema requires brand to be non-null. Blank means "not reviewed yet"
+      // and is replaced with the actual brand during the review step.
+      brand: '',
     }),
   });
 
@@ -116,7 +117,7 @@ async function createProductWithImages(cfg, collectionId, gender, imagePaths) {
     collectionId: product.collection_id,
     gender: String(product.gender || gender || 'unknown').toLowerCase(),
     category: String(product.category || 'other').toLowerCase(),
-    brand: product.brand ?? null,
+    brand: product.brand || null,
     aiGender: null,
     aiCategory: null,
     aiBrand: null,
