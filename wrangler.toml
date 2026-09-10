@@ -1,0 +1,7 @@
+name = "luxe-horizon-catalogue"
+pages_build_output_dir = "./artifacts/luxe-horizon/dist"
+compatibility_date = "2026-09-10"
+
+[[r2_buckets]]
+binding = "PRODUCT_IMAGES"
+bucket_name = "luxe-horizon-product-images"
