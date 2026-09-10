@@ -1,0 +1,51 @@
+/* Final QA corrections shared across Luxe Horizon catalogue/admin. */
+html[data-app-route='admin'] aside {
+  background-color: var(--lh-burgundy) !important;
+}
+
+html[data-app-route='admin'] main h1,
+html[data-app-route='admin'] main h2,
+html[data-app-route='admin'] main h3,
+html[data-app-route='admin'] form h1 {
+  font-family: 'Playfair Display', Georgia, serif !important;
+  font-weight: 400 !important;
+  letter-spacing: -0.03em;
+}
+
+html.dark {
+  --lh-ivory: #171311;
+  --lh-ivory-light: #211a17;
+  --lh-ivory-deep: #2b221e;
+  --lh-ink: #f4ede4;
+  --lh-muted-ink: #c3b2a5;
+  --lh-border: #59473d;
+  --lh-burgundy: #642536;
+  --lh-burgundy-deep: #39080f;
+  --lh-burgundy-soft: #7a3346;
+  --lh-champagne: #d5b387;
+  color-scheme: dark;
+}
+
+html.dark body,
+html.dark #root {
+  background: var(--lh-ivory) !important;
+  color: var(--lh-ink) !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  color: var(--lh-ink);
+}
+
+/* Mobile hero: retain editorial scale but stop the title overpowering the image. */
+@media (max-width: 640px) {
+  html[data-app-route='catalogue'] main > section:first-child h1 {
+    font-size: 2.62rem !important;
+    line-height: .98 !important;
+  }
+
+  html[data-app-route='catalogue'] main > section:first-child h1 + p {
+    max-width: 21rem;
+  }
+}
