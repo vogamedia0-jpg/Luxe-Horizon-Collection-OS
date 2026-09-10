@@ -67,12 +67,25 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [pending, setPending] = useState(false);
+  const [recoveryPending, setRecoveryPending] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const submit = async (event: React.FormEvent) => {
-    event.preventDefault(); if (!supabase) return; setPending(true); setError('');
+    event.preventDefault(); if (!supabase) return; setPending(true); setError(''); setNotice('');
     const result = await supabase.auth.signInWithPassword({ email, password });
     if (result.error) setError('Email or password was not accepted.');
     setPending(false);
+  };
+  const recover = async () => {
+    if (!supabase) return;
+    if (!email.trim()) { setError('Enter your admin email first.'); return; }
+    setRecoveryPending(true); setError(''); setNotice('');
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/admin?recovery=1`,
+    });
+    if (recoveryError) setError(recoveryError.message || 'Password recovery email could not be sent.');
+    else setNotice('Password recovery email sent. Open the email and follow the secure link to set a new password.');
+    setRecoveryPending(false);
   };
   return <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--lh-burgundy-deep)] px-5 text-[var(--lh-ivory-light)] noise">
     <form onSubmit={submit} className="w-full max-w-[420px] rounded-[20px] border border-white/10 bg-white/[.055] p-7 shadow-2xl sm:p-9">
@@ -82,8 +95,41 @@ function Login() {
       <p className="mt-2 text-sm text-white/55">Manage collections, products and publishing.</p>
       <label className="mt-8 block text-xs font-semibold">Email<input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-black/10 px-3 text-sm outline-none focus:border-[var(--lh-champagne)]" /></label>
       <label className="mt-4 block text-xs font-semibold">Password<input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-black/10 px-3 text-sm outline-none focus:border-[var(--lh-champagne)]" /></label>
+      <button type="button" onClick={recover} disabled={recoveryPending} className="mt-3 text-xs font-semibold text-[var(--lh-champagne)] underline-offset-4 hover:underline disabled:opacity-50">{recoveryPending ? 'Sending recovery email…' : 'Forgot password?'}</button>
       {error && <p className="mt-3 text-xs text-[#efb1a5]">{error}</p>}
+      {notice && <p className="mt-3 text-xs leading-5 text-[#eed8a8]">{notice}</p>}
       <button disabled={pending} className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--lh-champagne)] text-xs font-semibold text-[var(--lh-burgundy-deep)] disabled:opacity-50">{pending && <Loader2 size={14} className="animate-spin" />} Sign in</button>
+    </form>
+  </div>;
+}
+
+function ResetPassword() {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!supabase) return;
+    if (password.length < 8) { setError('Use at least 8 characters.'); return; }
+    if (password !== confirmPassword) { setError('Passwords do not match.'); return; }
+    setPending(true); setError('');
+    const { error: updateError } = await supabase.auth.updateUser({ password });
+    setPending(false);
+    if (updateError) { setError(updateError.message || 'Password could not be updated.'); return; }
+    window.history.replaceState({}, '', '/admin');
+    window.location.reload();
+  };
+  return <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--lh-burgundy-deep)] px-5 text-[var(--lh-ivory-light)] noise">
+    <form onSubmit={submit} className="w-full max-w-[420px] rounded-[20px] border border-white/10 bg-white/[.055] p-7 shadow-2xl sm:p-9">
+      <Logo light />
+      <p className="mt-10 lh-label !text-[var(--lh-champagne)]">Secure recovery</p>
+      <h1 className="mt-3 font-display text-4xl tracking-[-.03em]">Set new password</h1>
+      <p className="mt-2 text-sm text-white/55">Choose a new password for Luxe Horizon Admin.</p>
+      <label className="mt-8 block text-xs font-semibold">New password<input type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-black/10 px-3 text-sm outline-none focus:border-[var(--lh-champagne)]" /></label>
+      <label className="mt-4 block text-xs font-semibold">Confirm password<input type="password" minLength={8} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="mt-2 h-11 w-full rounded-lg border border-white/15 bg-black/10 px-3 text-sm outline-none focus:border-[var(--lh-champagne)]" /></label>
+      {error && <p className="mt-3 text-xs text-[#efb1a5]">{error}</p>}
+      <button disabled={pending} className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-[var(--lh-champagne)] text-xs font-semibold text-[var(--lh-burgundy-deep)] disabled:opacity-50">{pending && <Loader2 size={14} className="animate-spin" />} Set new password</button>
     </form>
   </div>;
 }
@@ -282,8 +328,10 @@ function AdminRoutes({ token }: { token: string }) {
 
 export default function AdminApp() {
   const session = useAdminSession();
+  const recoveryMode = new URLSearchParams(window.location.search).get('recovery') === '1';
   if (!isSupabaseConfigured) return <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--lh-ivory)] px-6 text-center"><div><h1 className="font-display text-3xl">Supabase configuration required</h1><p className="mt-3 max-w-md text-sm text-[var(--lh-muted-ink)]">Add VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY to run the admin application.</p></div></div>;
   if (!session.ready) return <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--lh-ivory)]"><Loader2 className="animate-spin text-[var(--lh-burgundy)]" /></div>;
+  if (recoveryMode) return <ResetPassword />;
   if (!session.token) return <Login />;
   return <AdminRoutes token={session.token} />;
 }
