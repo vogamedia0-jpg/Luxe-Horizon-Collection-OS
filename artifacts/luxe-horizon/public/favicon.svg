@@ -1,3 +1,8 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="Luxe Horizon">
+  <rect width="180" height="180" rx="34" fill="#F3EEE6"/>
+  <g fill="none" stroke="#642536" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M50 73h80l-7 63H57l-7-63Z" fill="#642536" stroke="#642536"/>
+    <path d="M68 75c1-24 10-36 22-36s21 12 22 36"/>
+    <path d="M79 75c0-19 4-29 11-29s11 10 11 29"/>
+  </g>
 </svg>
