@@ -4,6 +4,28 @@ function cleanUrl(value = '') { return String(value).replace(/\/$/, ''); }
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json; charset=utf-8' } }); }
 function enc(value) { return encodeURIComponent(String(value)); }
 
+const categoryValues = new Set(['clothing','footwear','watches','bags','accessories','eyewear','jewellery','wallets','belts','hats','scarves','other']);
+const genderValues = new Set(['men','women','unknown']);
+function cleanCategory(value) { const item = String(value || 'other').trim().toLowerCase(); return categoryValues.has(item) ? item : 'other'; }
+function cleanGender(value) { const item = String(value || 'unknown').trim().toLowerCase(); return genderValues.has(item) ? item : 'unknown'; }
+function friendlyError(error) {
+  let message = error instanceof Error ? error.message : 'Request failed.';
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const parsed = JSON.parse(message);
+      message = parsed.error || parsed.message || parsed.details || message;
+    } catch {
+      break;
+    }
+  }
+  if (message.includes('products_category_check')) {
+    return 'The Supabase category rule is still on the old list. Run the Luxe Horizon category migration once, then approve again.';
+  }
+  if (message.includes('check constraint')) return 'The database rejected this product update. Check brand, gender and category, then try again.';
+  if (message.length > 180) return 'Server request failed. Refresh once and try again.';
+  return message;
+}
+
 async function requireAdmin(request, env) {
   const auth = request.headers.get('Authorization') || '';
   if (!auth.startsWith('Bearer ')) return { error: json({ error: 'Authentication required.' }, 401) };
@@ -46,7 +68,7 @@ async function createCollection(request, env) {
 async function createProductWithImages(cfg, collectionId, gender, imagePaths) {
   const productRows = await rest(cfg, '/rest/v1/products', {
     method: 'POST',
-    body: JSON.stringify({ collection_id: collectionId, gender, category: 'other', brand: '', review_status: 'pending', is_active: true, is_published: false }),
+    body: JSON.stringify({ collection_id: collectionId, gender: cleanGender(gender), category: 'other', brand: '', review_status: 'pending', is_active: true, is_published: false }),
   });
   const product = productRows?.[0]; if (!product?.id) throw new Error('Product was not returned after creation.');
   const imageRows = imagePaths.map((imagePath, index) => ({ product_id: product.id, image_path: imagePath, is_primary: index === 0, sort_order: index + 1 }));
@@ -58,13 +80,12 @@ async function uploadProducts(request, env, grouped) {
   const cfg = await requireAdmin(request, env); if (cfg.error) return cfg.error;
   const input = await request.json(); const collectionId = String(input?.collectionId || '');
   if (!collectionId) return json({ error: 'collectionId is required.' }, 400);
-  const gender = input.batchHint === 'men' ? 'men' : input.batchHint === 'women' ? 'women' : 'unknown';
+  const gender = cleanGender(input.batchHint === 'men' ? 'men' : input.batchHint === 'women' ? 'women' : 'unknown');
   const groups = grouped
     ? (Array.isArray(input?.groups) ? input.groups.map((g) => Array.isArray(g?.imagePaths) ? g.imagePaths.filter(Boolean) : []).filter((g) => g.length) : [])
     : (Array.isArray(input?.images) ? input.images.filter((i) => i?.imagePath).map((i) => [i.imagePath]) : []);
   if (!groups.length) return json({ error: 'Product images are required.' }, 400);
 
-  // Parallel DB creation keeps large uploads responsive without changing product semantics.
   const concurrency = 6;
   const created = [];
   for (let i = 0; i < groups.length; i += concurrency) {
@@ -81,15 +102,32 @@ async function bulkUpdate(request, env) {
   if (!ids.length) return json({ error: 'Select at least one product.' }, 400);
   const allowed = ['gender','category','brand','reviewed','isPublished','isActive'];
   const patch = {};
-  if ('gender' in input) patch.gender = String(input.gender);
-  if ('category' in input) patch.category = String(input.category);
-  if ('brand' in input) patch.brand = String(input.brand || '');
+  if ('gender' in input) patch.gender = cleanGender(input.gender);
+  if ('category' in input) patch.category = cleanCategory(input.category);
+  if ('brand' in input) patch.brand = String(input.brand || '').trim();
   if ('reviewed' in input) patch.review_status = input.reviewed ? 'reviewed' : 'pending';
   if ('isPublished' in input) patch.is_published = Boolean(input.isPublished);
   if ('isActive' in input) patch.is_active = Boolean(input.isActive);
   if (!Object.keys(patch).length) return json({ error: `No supported fields supplied (${allowed.join(', ')}).` }, 400);
   const rows = await rest(cfg, `/rest/v1/products?id=in.(${ids.map(enc).join(',')})`, { method: 'PATCH', body: JSON.stringify(patch) });
   return json({ updated: rows?.length || ids.length });
+}
+
+async function updateFlexible(request, env, productId) {
+  const cfg = await requireAdmin(request, env); if (cfg.error) return cfg.error;
+  const input = await request.json();
+  const patch = {};
+  if (typeof input.gender === 'string') patch.gender = cleanGender(input.gender);
+  if (typeof input.category === 'string') patch.category = cleanCategory(input.category);
+  if (typeof input.brand === 'string' || input.brand === null) patch.brand = String(input.brand || '').trim();
+  if (typeof input.reviewed === 'boolean') patch.review_status = input.reviewed ? 'reviewed' : 'pending';
+  if (typeof input.isActive === 'boolean') patch.is_active = input.isActive;
+  if (typeof input.isPublished === 'boolean') patch.is_published = input.isPublished;
+  if (typeof input.sortOrder === 'number') patch.sort_order = input.sortOrder;
+  if (typeof input.collectionId === 'string') patch.collection_id = input.collectionId;
+  if (!Object.keys(patch).length) return json({ error: 'No product changes were supplied.' }, 400);
+  const rows = await rest(cfg, `/rest/v1/products?id=eq.${enc(productId)}`, { method: 'PATCH', body: JSON.stringify(patch) });
+  return rows?.length ? json(rows[0]) : json({ error: 'Product not found.' }, 404);
 }
 
 async function approvePublishReady(request, env) {
@@ -121,10 +159,10 @@ async function mergeProducts(request, env) {
   const existing = await rest(cfg, `/rest/v1/product_images?product_id=eq.${enc(targetId)}&order=sort_order.asc`);
   const moving = await rest(cfg, `/rest/v1/product_images?product_id=in.(${sourceIds.map(enc).join(',')})&order=sort_order.asc`);
   let sortOrder = existing?.length || 0;
-  for (const image of moving || []) {
+  await Promise.all((moving || []).map((image) => {
     sortOrder += 1;
-    await rest(cfg, `/rest/v1/product_images?id=eq.${enc(image.id)}`, { method: 'PATCH', body: JSON.stringify({ product_id: targetId, is_primary: false, sort_order: sortOrder }) });
-  }
+    return rest(cfg, `/rest/v1/product_images?id=eq.${enc(image.id)}`, { method: 'PATCH', body: JSON.stringify({ product_id: targetId, is_primary: false, sort_order: sortOrder }) });
+  }));
   await rest(cfg, `/rest/v1/products?id=in.(${sourceIds.map(enc).join(',')})`, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
   return json({ targetId, merged: ids.length, images: sortOrder });
 }
@@ -139,10 +177,12 @@ export default {
       if (request.method === 'POST' && url.pathname === '/api/products/bulk-update') return await bulkUpdate(request, env);
       if (request.method === 'POST' && url.pathname === '/api/products/publish-ready') return await approvePublishReady(request, env);
       if (request.method === 'POST' && url.pathname === '/api/products/merge') return await mergeProducts(request, env);
+      const flexibleMatch = url.pathname.match(/^\/api\/products\/([^/]+)\/flexible$/);
+      if (request.method === 'PATCH' && flexibleMatch) return await updateFlexible(request, env, decodeURIComponent(flexibleMatch[1]));
       return onRequest({ request, env });
     } catch (error) {
       console.error('Luxe Horizon Worker error:', error);
-      return json({ error: error instanceof Error ? error.message : 'Request failed.' }, Number(error?.status) || 500);
+      return json({ error: friendlyError(error) }, Number(error?.status) || 500);
     }
   },
 };
