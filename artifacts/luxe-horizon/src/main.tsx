@@ -1,7 +1,7 @@
 import { createRoot } from 'react-dom/client';
 
 import App from './App';
-import AdminAppV2 from './AdminAppV2';
+import AdminApp from './AdminApp';
 import PublicCatalogue from './PublicCatalogue';
 import { ErrorBoundary } from '@/components/error-boundary';
 
@@ -18,6 +18,6 @@ createRoot(document.getElementById('root')!, {
   },
 }).render(
   <ErrorBoundary>
-    {isPublicCatalogueRoute ? <PublicCatalogue /> : isAdminRoute ? <AdminAppV2 /> : <App />}
+    {isPublicCatalogueRoute ? <PublicCatalogue /> : isAdminRoute ? <AdminApp /> : <App />}
   </ErrorBoundary>,
 );
