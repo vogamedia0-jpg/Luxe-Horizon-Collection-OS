@@ -72,6 +72,18 @@ const formatPublishedDate = (value?: string | null) => {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'long', year: 'numeric' }).format(date).toUpperCase();
 };
 
+const getLivePublishedAt = async (fallback?: string | null) => {
+  if (fallback) return fallback;
+  try {
+    const response = await fetch('/api/catalogue');
+    if (!response.ok) return null;
+    const data = await response.json() as { collection?: { publishedAt?: string | null } | null };
+    return data.collection?.publishedAt || null;
+  } catch {
+    return null;
+  }
+};
+
 const drawPageBase = (doc: jsPDF) => {
   doc.setFillColor(COLORS.ivory);
   doc.rect(0, 0, 210, 297, 'F');
@@ -114,9 +126,10 @@ export async function generateBrandedCataloguePdf(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: false });
   const coverImage = options.coverImage || '/assets/brand-board.png';
-  const publishedDate = formatPublishedDate(options.publishedAt);
+  const publishedAt = await getLivePublishedAt(options.publishedAt);
+  const publishedDate = formatPublishedDate(publishedAt);
 
-  // COVER — fixed Luxe Horizon composition, with only collection metadata changing.
+  // COVER — fixed Luxe Horizon composition, with the live collection publication date.
   drawPageBase(doc);
   doc.setFillColor(COLORS.burgundyDeep);
   doc.roundedRect(10, 13, 190, 271, 4, 4, 'F');
