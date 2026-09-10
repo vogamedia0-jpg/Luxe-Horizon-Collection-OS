@@ -1,6 +1,7 @@
 name = "luxe-horizon-collection-os"
 main = "./worker/index.js"
 compatibility_date = "2026-09-10"
+keep_vars = true
 
 [assets]
 directory = "./artifacts/luxe-horizon/dist"
