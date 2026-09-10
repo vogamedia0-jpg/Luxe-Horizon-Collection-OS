@@ -19,15 +19,18 @@ type LoadedImage = {
   height: number;
 };
 
+const PAGE_W = 135;
+const PAGE_H = 240;
+
 const COLORS = {
-  burgundy: '#642536',
-  burgundyDeep: '#4D1D2A',
-  ivory: '#F3EEE6',
-  ivoryLight: '#FAF6F0',
-  champagne: '#D8B87F',
-  ink: '#241B18',
-  muted: '#806B61',
-  border: '#D8CBBF',
+  burgundy: '#39080F',
+  burgundyDeep: '#270509',
+  ivory: '#E9DFD2',
+  ivoryLight: '#F4EDE4',
+  champagne: '#D5B387',
+  ink: '#080808',
+  muted: '#6D5D54',
+  border: '#C9B7A3',
 };
 
 const imageDataUrl = async (src: string): Promise<LoadedImage> => {
@@ -46,11 +49,7 @@ const imageDataUrl = async (src: string): Promise<LoadedImage> => {
     image.onerror = () => reject(new Error('Could not read image dimensions'));
     image.src = data;
   });
-  return {
-    data,
-    format: blob.type.includes('png') ? 'PNG' : 'JPEG',
-    ...dimensions,
-  };
+  return { data, format: blob.type.includes('png') ? 'PNG' : 'JPEG', ...dimensions };
 };
 
 const fitContain = (sourceWidth: number, sourceHeight: number, boxWidth: number, boxHeight: number) => {
@@ -60,9 +59,24 @@ const fitContain = (sourceWidth: number, sourceHeight: number, boxWidth: number,
   return { width, height, xOffset: (boxWidth - width) / 2, yOffset: (boxHeight - height) / 2 };
 };
 
-const fitCover = (sourceWidth: number, sourceHeight: number, boxWidth: number, boxHeight: number) => {
-  const scale = Math.max(boxWidth / sourceWidth, boxHeight / sourceHeight);
-  return { width: sourceWidth * scale, height: sourceHeight * scale };
+const cropToCanvas = async (image: LoadedImage, targetWidth: number, targetHeight: number) => {
+  const source = new Image();
+  await new Promise<void>((resolve, reject) => {
+    source.onload = () => resolve();
+    source.onerror = () => reject(new Error('Image could not be rendered'));
+    source.src = image.data;
+  });
+  const canvas = document.createElement('canvas');
+  const scaleFactor = 5;
+  canvas.width = Math.round(targetWidth * scaleFactor);
+  canvas.height = Math.round(targetHeight * scaleFactor);
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return image.data;
+  const scale = Math.max(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
+  const drawW = source.naturalWidth * scale;
+  const drawH = source.naturalHeight * scale;
+  ctx.drawImage(source, (canvas.width - drawW) / 2, (canvas.height - drawH) / 2, drawW, drawH);
+  return canvas.toDataURL('image/jpeg', .97);
 };
 
 const formatPublishedDate = (value?: string | null) => {
@@ -86,27 +100,20 @@ const getLivePublishedAt = async (fallback?: string | null) => {
 
 const drawPageBase = (doc: jsPDF) => {
   doc.setFillColor(COLORS.ivory);
-  doc.rect(0, 0, 210, 297, 'F');
+  doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
 };
 
-const drawProductImage = async (
-  doc: jsPDF,
-  src: string,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-) => {
+const drawContainedImage = async (doc: jsPDF, src: string, x: number, y: number, width: number, height: number) => {
   doc.setFillColor(COLORS.ivoryLight);
-  doc.roundedRect(x, y, width, height, 2.2, 2.2, 'F');
+  doc.roundedRect(x, y, width, height, 3, 3, 'F');
   try {
     const image = await imageDataUrl(src);
-    const fitted = fitContain(image.width, image.height, width - 4, height - 4);
+    const fitted = fitContain(image.width, image.height, width, height);
     doc.addImage(
       image.data,
       image.format,
-      x + 2 + fitted.xOffset,
-      y + 2 + fitted.yOffset,
+      x + fitted.xOffset,
+      y + fitted.yOffset,
       fitted.width,
       fitted.height,
       undefined,
@@ -114,7 +121,20 @@ const drawProductImage = async (
     );
   } catch {
     doc.setDrawColor(COLORS.border);
-    doc.roundedRect(x, y, width, height, 2.2, 2.2, 'S');
+    doc.roundedRect(x, y, width, height, 3, 3, 'S');
+  }
+};
+
+const drawLogo = async (doc: jsPDF, x: number, y: number, width: number) => {
+  try {
+    const logo = await imageDataUrl('/assets/logo.png');
+    const ratio = logo.height / logo.width;
+    doc.addImage(logo.data, logo.format, x, y, width, width * ratio, undefined, 'NONE');
+  } catch {
+    doc.setTextColor(COLORS.burgundy);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(12);
+    doc.text('Luxe horizon', x, y + 5);
   }
 };
 
@@ -124,83 +144,53 @@ export async function generateBrandedCataloguePdf(
   resolveImage: (path?: string | null) => string,
   options: PdfOptions = {},
 ) {
-  const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: false });
-  const coverImage = options.coverImage || '/assets/brand-board.png';
+  const doc = new jsPDF({ unit: 'mm', format: [PAGE_W, PAGE_H], orientation: 'portrait', compress: false });
   const publishedAt = await getLivePublishedAt(options.publishedAt);
   const publishedDate = formatPublishedDate(publishedAt);
+  const coverImage = options.coverImage || '/assets/hero.png';
 
-  // COVER — fixed Luxe Horizon composition, with the live collection publication date.
+  // Digital-first 9:16 cover for phone sharing.
   drawPageBase(doc);
-  doc.setFillColor(COLORS.burgundyDeep);
-  doc.roundedRect(10, 13, 190, 271, 4, 4, 'F');
-
   try {
     const hero = await imageDataUrl(coverImage);
-    const boxX = 98;
-    const boxY = 13;
-    const boxW = 102;
-    const boxH = 271;
-    const fitted = fitCover(hero.width, hero.height, boxW, boxH);
-    const canvas = document.createElement('canvas');
-    const pixelScale = 2;
-    canvas.width = Math.round(boxW * 5 * pixelScale);
-    canvas.height = Math.round(boxH * 5 * pixelScale);
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      const source = new Image();
-      await new Promise<void>((resolve, reject) => {
-        source.onload = () => resolve();
-        source.onerror = () => reject(new Error('Cover image could not be rendered'));
-        source.src = hero.data;
-      });
-      const scale = Math.max(canvas.width / source.naturalWidth, canvas.height / source.naturalHeight);
-      const drawW = source.naturalWidth * scale;
-      const drawH = source.naturalHeight * scale;
-      ctx.drawImage(source, (canvas.width - drawW) / 2, (canvas.height - drawH) / 2, drawW, drawH);
-      doc.addImage(canvas.toDataURL('image/jpeg', 0.96), 'JPEG', boxX, boxY, boxW, boxH, undefined, 'NONE');
-    } else {
-      doc.addImage(hero.data, hero.format, boxX, boxY, fitted.width, fitted.height, undefined, 'NONE');
-    }
+    const cropped = await cropToCanvas(hero, PAGE_W, 154);
+    doc.addImage(cropped, 'JPEG', 0, 0, PAGE_W, 154, undefined, 'NONE');
   } catch {
-    doc.setFillColor(COLORS.burgundy);
-    doc.rect(98, 13, 102, 271, 'F');
+    doc.setFillColor(COLORS.burgundyDeep);
+    doc.rect(0, 0, PAGE_W, 154, 'F');
   }
 
   doc.setFillColor(COLORS.burgundyDeep);
-  doc.rect(10, 13, 96, 271, 'F');
-  doc.setTextColor(COLORS.ivoryLight);
-  if (publishedDate) {
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7.5);
-    doc.text(publishedDate, 24, 67, { charSpace: 1.6 });
-  }
-  doc.setFont('times', 'normal');
-  doc.setFontSize(37);
-  doc.text('New', 23, 101);
-  doc.text('Collection', 23, 127);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8.5);
-  doc.setTextColor('#EADFD3');
-  doc.text('A live catalogue of our latest arrivals,', 24, 150);
-  doc.text('updated every few days.', 24, 157);
-  doc.setDrawColor(COLORS.champagne);
-  doc.line(24, 171, 58, 171);
-  doc.setTextColor(COLORS.ivoryLight);
-  doc.setFont('times', 'normal');
-  doc.setFontSize(13);
-  doc.text(title, 24, 190, { maxWidth: 62 });
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7.5);
-  doc.setTextColor('#D8C9BF');
-  doc.text(`${products.length} product${products.length === 1 ? '' : 's'}`, 24, 211);
+  doc.rect(0, 142, PAGE_W, 98, 'F');
   doc.setTextColor(COLORS.champagne);
-  doc.setFontSize(7);
-  doc.text('LUXE HORIZON', 24, 264, { charSpace: 1.2 });
-  doc.setTextColor('#D8C9BF');
-  doc.text('The pinnacle of luxury shopping.', 24, 271);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(6.8);
+  if (publishedDate) doc.text(publishedDate, 12, 158, { charSpace: 1.15 });
 
-  // Use the original uploaded product files exactly as stored. They are never AI-generated,
-  // retouched or cropped by the PDF generator; contain-fit preserves the whole source image.
+  doc.setTextColor(COLORS.ivoryLight);
+  doc.setFont('times', 'normal');
+  doc.setFontSize(27);
+  doc.text('New', 12, 177);
+  doc.text('Collection', 12, 191);
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7.2);
+  doc.setTextColor('#E4D8CB');
+  doc.text('A live catalogue of our latest arrivals,', 12, 204);
+  doc.text('Updated every few days.', 12, 210);
+
+  doc.setDrawColor(COLORS.champagne);
+  doc.line(12, 217, 42, 217);
+
+  doc.setFont('times', 'normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(COLORS.ivoryLight);
+  doc.text(title, 12, 226, { maxWidth: 82 });
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
+  doc.setTextColor('#D4C5B8');
+  doc.text(`${products.length} product${products.length === 1 ? '' : 's'}`, 123, 226, { align: 'right' });
+
   const entries = products.flatMap((product) => {
     const images = [...(product.images || [])].sort((a, b) => {
       if (a.isPrimary !== b.isPrimary) return a.isPrimary ? -1 : 1;
@@ -209,52 +199,44 @@ export async function generateBrandedCataloguePdf(
     return images.map((image) => ({ product, image }));
   });
 
-  // Exactly two product photos per page for comfortable viewing.
-  for (let index = 0; index < entries.length; index += 2) {
-    doc.addPage();
+  for (let index = 0; index < entries.length; index += 1) {
+    const { product, image } = entries[index];
+    doc.addPage([PAGE_W, PAGE_H], 'portrait');
     drawPageBase(doc);
 
-    doc.setTextColor(COLORS.burgundy);
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.8);
-    doc.text('LUXE HORIZON  /  NEW COLLECTION', 16, 16, { charSpace: 1.05 });
+    await drawLogo(doc, 10, 8, 35);
     doc.setDrawColor(COLORS.border);
-    doc.line(16, 21, 194, 21);
+    doc.line(10, 23, 125, 23);
 
-    const pageEntries = entries.slice(index, index + 2);
-    for (let slot = 0; slot < pageEntries.length; slot += 1) {
-      const { product, image } = pageEntries[slot];
-      const x = slot === 0 ? 16 : 108;
-      const imageY = 32;
-      const imageW = 86;
-      const imageH = 205;
-      await drawProductImage(doc, resolveImage(image.imagePath), x, imageY, imageW, imageH);
+    await drawContainedImage(doc, resolveImage(image.imagePath), 10, 31, 115, 158);
 
-      doc.setTextColor(COLORS.ink);
-      doc.setFont('times', 'normal');
-      doc.setFontSize(15);
-      doc.text(product.brand || 'Luxe Horizon', x, 249, { maxWidth: imageW });
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7);
-      doc.setTextColor(COLORS.muted);
-      doc.text(`${product.gender.toUpperCase()}  /  ${product.category.toUpperCase()}`, x, 257, { charSpace: .4 });
-      doc.setDrawColor(COLORS.champagne);
-      doc.line(x, 265, x + 24, 265);
-    }
+    doc.setTextColor(COLORS.burgundy);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(6.3);
+    doc.text(`${product.gender.toUpperCase()}  /  ${product.category.toUpperCase()}`, 10, 201, { charSpace: .75 });
 
+    doc.setTextColor(COLORS.ink);
+    doc.setFont('times', 'normal');
+    doc.setFontSize(23);
+    doc.text(product.brand || 'Luxe Horizon', 10, 216, { maxWidth: 96 });
+
+    doc.setDrawColor(COLORS.champagne);
+    doc.line(10, 224, 36, 224);
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(6.5);
+    doc.setFontSize(6.2);
     doc.setTextColor(COLORS.muted);
-    doc.text(String(Math.floor(index / 2) + 1).padStart(2, '0'), 194, 284, { align: 'right' });
+    doc.text('LUXE HORIZON / NEW COLLECTION', 10, 233, { charSpace: .65 });
+    doc.text(String(index + 1).padStart(2, '0'), 125, 233, { align: 'right' });
   }
 
   if (entries.length === 0) {
-    doc.addPage();
+    doc.addPage([PAGE_W, PAGE_H], 'portrait');
     drawPageBase(doc);
+    await drawLogo(doc, 12, 12, 38);
     doc.setTextColor(COLORS.burgundy);
     doc.setFont('times', 'normal');
     doc.setFontSize(24);
-    doc.text('Collection coming soon.', 24, 74);
+    doc.text('Collection coming soon.', 12, 78);
   }
 
   const safeName = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'luxe-horizon-catalogue';
