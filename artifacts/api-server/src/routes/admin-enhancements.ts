@@ -37,17 +37,17 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 const encode = (value: string) => encodeURIComponent(value);
 
-async function signedImagePath(storagePath: string) {
-  if (!storagePath || storagePath.startsWith("http://") || storagePath.startsWith("https://") || storagePath.startsWith("/assets/")) return storagePath;
+async function signedImagePath(imagePath: string) {
+  if (!imagePath || imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("/assets/")) return imagePath;
   try {
     const result = await request<{ signedURL?: string; signedUrl?: string }>(
-      `/storage/v1/object/sign/${encode(storageBucket)}/${storagePath.split("/").map(encode).join("/")}`,
+      `/storage/v1/object/sign/${encode(storageBucket)}/${imagePath.split("/").map(encode).join("/")}`,
       { method: "POST", body: JSON.stringify({ expiresIn: 3600 }) },
     );
     const signed = result.signedURL || result.signedUrl;
-    return signed ? (signed.startsWith("http") ? signed : `${supabaseUrl}/storage/v1${signed}`) : storagePath;
+    return signed ? (signed.startsWith("http") ? signed : `${supabaseUrl}/storage/v1${signed}`) : imagePath;
   } catch {
-    return storagePath;
+    return imagePath;
   }
 }
 
@@ -57,7 +57,10 @@ async function productsFromRows(rows: Record<string, any>[], signImages = true) 
   const imageRows = await request<Record<string, any>[]>(`/rest/v1/product_images?product_id=in.(${encode(ids)})&order=sort_order.asc`);
   const imageMap = new Map<string, any[]>();
   for (const image of imageRows) {
-    const imagePath = signImages ? await signedImagePath(image.storage_path) : image.storage_path;
+    // The live Luxe Horizon schema uses product_images.image_path.
+    // Keep a storage_path fallback so older rows remain readable if present.
+    const storedPath = image.image_path ?? image.storage_path ?? "";
+    const imagePath = signImages ? await signedImagePath(storedPath) : storedPath;
     const item = { id: image.id, imagePath, isPrimary: Boolean(image.is_primary), sortOrder: image.sort_order ?? 0 };
     imageMap.set(image.product_id, [...(imageMap.get(image.product_id) || []), item]);
   }
@@ -67,12 +70,12 @@ async function productsFromRows(rows: Record<string, any>[], signImages = true) 
     gender: row.gender || "unknown",
     category: row.category || "other",
     brand: row.brand,
-    aiGender: row.ai_suggested_gender,
-    aiCategory: row.ai_suggested_category,
-    aiBrand: row.ai_suggested_brand,
-    aiConfidence: row.ai_confidence,
+    aiGender: row.ai_suggested_gender ?? null,
+    aiCategory: row.ai_suggested_category ?? null,
+    aiBrand: row.ai_suggested_brand ?? null,
+    aiConfidence: row.ai_confidence ?? null,
     reviewed: row.review_status === "reviewed" || row.review_status === "approved",
-    isActive: Boolean(row.is_active),
+    isActive: row.is_active !== false,
     isPublished: Boolean(row.is_published),
     sortOrder: row.sort_order ?? 0,
     createdAt: row.created_at,
@@ -176,10 +179,31 @@ router.post("/products/upload-grouped", async (req, res, next) => {
     for (const group of groups) {
       const imagePaths = Array.isArray(group.imagePaths) ? group.imagePaths.filter(Boolean) : [];
       if (!imagePaths.length) continue;
-      const products = await request<Record<string, unknown>[]>("/rest/v1/products", { method: "POST", body: JSON.stringify({ collection_id: collectionId, gender, category: "other", brand: null, ai_suggested_gender: gender === "unknown" ? null : gender, ai_suggested_category: "other", review_status: "pending", is_active: true, is_published: false }) });
+
+      // Only write columns confirmed in the live products table. AI suggestions are
+      // review-layer metadata and must not make ingestion depend on optional columns.
+      const products = await request<Record<string, unknown>[]>("/rest/v1/products", {
+        method: "POST",
+        body: JSON.stringify({
+          collection_id: collectionId,
+          gender,
+          category: "other",
+          brand: null,
+        }),
+      });
       const product = products[0];
       const productId = String(product.id);
-      await request<Record<string, unknown>[]>("/rest/v1/product_images", { method: "POST", body: JSON.stringify(imagePaths.map((storagePath, index) => ({ product_id: productId, storage_path: storagePath, is_primary: index === 0, sort_order: index + 1 }))) });
+
+      // Live Supabase schema uses image_path (not storage_path).
+      await request<Record<string, unknown>[]>("/rest/v1/product_images", {
+        method: "POST",
+        body: JSON.stringify(imagePaths.map((imagePath, index) => ({
+          product_id: productId,
+          image_path: imagePath,
+          is_primary: index === 0,
+          sort_order: index + 1,
+        }))),
+      });
       created.push(product);
     }
     res.status(201).json(created);
