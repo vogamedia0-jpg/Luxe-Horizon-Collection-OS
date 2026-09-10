@@ -16,12 +16,32 @@ const categoryLabel = (value:string) => ({ clothing:'Clothing', footwear:'Footwe
 
 type ProductImage = { id:string; imagePath:string; isPrimary:boolean; sortOrder:number };
 type Product = { id:string; collectionId:string; gender:'men'|'women'|'unknown'; category:string; brand?:string|null; reviewed:boolean; isActive:boolean; isPublished:boolean; images:ProductImage[] };
+
 type Dashboard = { collection:{ id:string; name:string; isPublished:boolean; publishedAt?:string|null }|null; needsReview:number };
+
+function cleanErrorText(raw:string) {
+  let message = raw || 'Request failed.';
+  for (let i = 0; i < 2; i += 1) {
+    try {
+      const parsed = JSON.parse(message);
+      message = parsed.error || parsed.message || parsed.details || message;
+    } catch {
+      break;
+    }
+  }
+  if (message.includes('products_category_check')) {
+    return 'The database category list is still using the old setup. Run the new Supabase category migration once, then approve again.';
+  }
+  if (message.includes('check constraint')) return 'A database rule rejected this product update. Check the selected brand, gender and category, then try again.';
+  if (message.length > 180) return 'The server rejected this request. Refresh once and try again.';
+  return message;
+}
 
 async function request<T>(path:string, token:string, init:RequestInit={}) {
   const response = await fetch(`/api${path}`, { ...init, headers:{ 'Content-Type':'application/json', Authorization:`Bearer ${token}`, ...(init.headers||{}) } });
-  if (!response.ok) throw new Error((await response.text()) || `Request failed (${response.status})`);
-  return response.status === 204 ? undefined as T : response.json() as Promise<T>;
+  if (!response.ok) throw new Error(cleanErrorText(await response.text()) || `Request failed (${response.status})`);
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 function imageFor(product:Product) { return product.images.find((i)=>i.isPrimary)?.imagePath || product.images[0]?.imagePath || '/assets/brand-board.png'; }
@@ -62,7 +82,7 @@ function ProductsPage({token}:{token:string}) {
   const filtered=useMemo(()=>items.filter((p)=>!search||(p.brand||'').toLowerCase().includes(search.toLowerCase())),[items,search]);
   const toggle=(id:string)=>setSelected((ids)=>ids.includes(id)?ids.filter((x)=>x!==id):[...ids,id]);
   const merge=async()=>{if(selected.length<2)return;setBusy(true);setMessage('');try{await request('/products/merge',token,{method:'POST',body:JSON.stringify({productIds:selected})});setSelected([]);await load();setMessage('Selected angles are now grouped under one product.');}catch(e){setMessage(e instanceof Error?e.message:'Merge failed.');}finally{setBusy(false)}};
-  const publishAll=async()=>{const ids=items.filter((p)=>p.reviewed&&!p.isPublished&&p.brand&&p.gender!=='unknown'&&p.category!=='other').map((p)=>p.id);if(!ids.length)return;setBusy(true);try{await request('/products/bulk-update',token,{method:'POST',body:JSON.stringify({ids,isPublished:true})});await load();setMessage(`${ids.length} ready product${ids.length===1?'':'s'} published.`);}finally{setBusy(false)}};
+  const publishAll=async()=>{const ids=items.filter((p)=>p.reviewed&&!p.isPublished&&p.brand&&p.gender!=='unknown'&&p.category!=='other').map((p)=>p.id);if(!ids.length)return;setBusy(true);try{await request('/products/bulk-update',token,{method:'POST',body:JSON.stringify({ids,isPublished:true})});await load();setMessage(`${ids.length} ready product${ids.length===1?'':'s'} published.`);}catch(e){setMessage(e instanceof Error?e.message:'Publish failed.');}finally{setBusy(false)}};
   return <FastShell><main className="mx-auto max-w-[1280px] px-5 py-8 sm:px-8 lg:py-10"><div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"><div><p className="lh-label">Catalogue</p><h1 className="mt-2 font-display text-4xl sm:text-5xl">Products</h1><p className="mt-2 text-sm text-[var(--lh-muted-ink)]">Manage products, group multiple angles and publish ready items in bulk.</p></div><div className="flex flex-wrap gap-2"><button onClick={merge} disabled={busy||selected.length<2} className="lh-secondary-action inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold disabled:opacity-40"><Merge size={14}/> Merge selected ({selected.length})</button><button onClick={publishAll} disabled={busy} className="lh-primary-action rounded-full px-4 py-2.5 text-xs font-semibold">Publish all ready</button></div></div>
     {message&&<div className="mb-4 rounded-xl border border-[var(--lh-border)] bg-[var(--lh-ivory-light)] px-4 py-3 text-xs text-[var(--lh-muted-ink)]">{message}</div>}
     <label className="relative mb-4 block"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--lh-muted-ink)]" size={16}/><input value={search} onChange={(e)=>setSearch(e.target.value)} placeholder="Search brand" className="h-11 w-full rounded-xl border border-[var(--lh-border)] bg-[var(--lh-ivory-light)] pl-10 pr-3 text-sm"/></label>
