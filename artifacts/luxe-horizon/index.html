@@ -36,6 +36,35 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <script>
+      (() => {
+        try {
+          if (location.pathname.startsWith('/admin')) return;
+          const key = 'lh_visitor_id';
+          let visitorId = localStorage.getItem(key);
+          if (!visitorId) {
+            visitorId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+            localStorage.setItem(key, visitorId);
+          }
+          const lastVisitKey = 'lh_last_site_visit';
+          const now = Date.now();
+          const last = Number(localStorage.getItem(lastVisitKey) || 0);
+          if (now - last < 30 * 60 * 1000) return;
+          localStorage.setItem(lastVisitKey, String(now));
+          const payload = JSON.stringify({
+            visitorId,
+            eventType: 'site_visit',
+            path: location.pathname,
+            ref: new URLSearchParams(location.search).get('ref') || null,
+          });
+          if (navigator.sendBeacon) {
+            navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
+          } else {
+            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+          }
+        } catch (_) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
