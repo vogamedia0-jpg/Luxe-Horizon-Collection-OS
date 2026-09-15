@@ -15,7 +15,7 @@ const path = window.location.pathname;
 const isPublicProductRoute = path.startsWith('/catalogue/product/') || path.startsWith('/product/');
 const isPublicCatalogueRoute = path === '/' || path === '/catalogue' || isPublicProductRoute;
 const isAdminRoute = path.startsWith('/admin');
-const isFastAdminRoute = path === '/admin/review' || path === '/admin/products';
+const isFastAdminRoute = path === '/admin/review' || path === '/admin/products' || path === '/admin/analytics';
 const isFastUploadRoute = path === '/admin/upload';
 
 document.documentElement.dataset.appRoute = isAdminRoute ? 'admin' : 'catalogue';
