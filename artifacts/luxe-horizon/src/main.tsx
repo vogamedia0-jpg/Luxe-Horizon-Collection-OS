@@ -4,6 +4,7 @@ import App from './App';
 import AdminApp from './AdminApp';
 import AdminFastPages from './AdminFastPages';
 import AdminUploadFast from './AdminUploadFast';
+import AdminAnalyticsV2 from './AdminAnalyticsV2';
 import AppearanceToggle from './AppearanceToggle';
 import PublicCatalogue from './PublicCatalogue';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -15,7 +16,8 @@ const path = window.location.pathname;
 const isPublicProductRoute = path.startsWith('/catalogue/product/') || path.startsWith('/product/');
 const isPublicCatalogueRoute = path === '/' || path === '/catalogue' || isPublicProductRoute;
 const isAdminRoute = path.startsWith('/admin');
-const isFastAdminRoute = path === '/admin/review' || path === '/admin/products' || path === '/admin/analytics';
+const isAnalyticsRoute = path === '/admin/analytics';
+const isFastAdminRoute = path === '/admin/review' || path === '/admin/products';
 const isFastUploadRoute = path === '/admin/upload';
 
 document.documentElement.dataset.appRoute = isAdminRoute ? 'admin' : 'catalogue';
@@ -29,7 +31,7 @@ createRoot(document.getElementById('root')!, {
   },
 }).render(
   <ErrorBoundary>
-    {isPublicCatalogueRoute ? <PublicCatalogue /> : isFastUploadRoute ? <AdminUploadFast /> : isFastAdminRoute ? <AdminFastPages /> : isAdminRoute ? <AdminApp /> : <App />}
+    {isPublicCatalogueRoute ? <PublicCatalogue /> : isFastUploadRoute ? <AdminUploadFast /> : isAnalyticsRoute ? <AdminAnalyticsV2 /> : isFastAdminRoute ? <AdminFastPages /> : isAdminRoute ? <AdminApp /> : <App />}
     {isAdminRoute && <AppearanceToggle />}
   </ErrorBoundary>,
 );
