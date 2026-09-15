@@ -7,7 +7,6 @@
     <meta name="description" content="Luxe Horizon — a private mobile-first catalogue of latest luxury arrivals." />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://luxehorizon.store/" />
-
     <meta property="og:site_name" content="Luxe Horizon" />
     <meta property="og:title" content="Luxe Horizon" />
     <meta property="og:description" content="The pinnacle of luxury shopping." />
@@ -18,7 +17,6 @@
     <meta name="twitter:title" content="Luxe Horizon" />
     <meta name="twitter:description" content="The pinnacle of luxury shopping." />
     <meta name="twitter:image" content="https://luxehorizon.store/assets/hero.png" />
-
     <meta name="theme-color" content="#512228" />
     <meta name="color-scheme" content="light dark" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -27,13 +25,11 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="application-name" content="Luxe Horizon" />
     <meta name="msapplication-TileColor" content="#512228" />
-
     <link rel="manifest" href="/manifest.webmanifest?v=2" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.svg?v=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=official-9" />
     <link rel="shortcut icon" href="/favicon.svg?v=official-9" />
     <link rel="mask-icon" href="/favicon.svg?v=official-9" color="#512228" />
-
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <script>
@@ -46,22 +42,22 @@
             visitorId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
             localStorage.setItem(key, visitorId);
           }
+          const send = (eventType, extra = {}) => {
+            const payload = JSON.stringify({ visitorId, eventType, path: location.pathname, ref: new URLSearchParams(location.search).get('ref') || null, ...extra });
+            if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
+            else fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+          };
           const lastVisitKey = 'lh_last_site_visit';
           const now = Date.now();
           const last = Number(localStorage.getItem(lastVisitKey) || 0);
-          if (now - last < 30 * 60 * 1000) return;
-          localStorage.setItem(lastVisitKey, String(now));
-          const payload = JSON.stringify({
-            visitorId,
-            eventType: 'site_visit',
-            path: location.pathname,
-            ref: new URLSearchParams(location.search).get('ref') || null,
-          });
-          if (navigator.sendBeacon) {
-            navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
-          } else {
-            fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
+          if (now - last >= 30 * 60 * 1000) {
+            localStorage.setItem(lastVisitKey, String(now));
+            send('site_visit');
           }
+          document.addEventListener('click', (event) => {
+            const target = event.target instanceof Element ? event.target.closest('[data-testid="link-whatsapp-enquiry"]') : null;
+            if (target) send('whatsapp_click');
+          });
         } catch (_) {}
       })();
     </script>
