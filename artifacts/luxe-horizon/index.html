@@ -36,17 +36,26 @@
       (() => {
         try {
           if (location.pathname.startsWith('/admin')) return;
-          const key = 'lh_visitor_id';
-          let visitorId = localStorage.getItem(key);
+          const visitorKey = 'lh_visitor_id';
+          const sessionKey = 'lh_session_id';
+          let visitorId = localStorage.getItem(visitorKey);
           if (!visitorId) {
-            visitorId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
-            localStorage.setItem(key, visitorId);
+            visitorId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            localStorage.setItem(visitorKey, visitorId);
           }
+          let sessionId = sessionStorage.getItem(sessionKey);
+          if (!sessionId) {
+            sessionId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            sessionStorage.setItem(sessionKey, sessionId);
+          }
+          const query = new URLSearchParams(location.search);
+          const ref = query.get('ref') || null;
           const send = (eventType, extra = {}) => {
-            const payload = JSON.stringify({ visitorId, eventType, path: location.pathname, ref: new URLSearchParams(location.search).get('ref') || null, ...extra });
+            const payload = JSON.stringify({ visitorId, sessionId, eventType, path: location.pathname, ref, ...extra });
             if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([payload], { type: 'application/json' }));
             else fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true });
           };
+
           const lastVisitKey = 'lh_last_site_visit';
           const now = Date.now();
           const last = Number(localStorage.getItem(lastVisitKey) || 0);
@@ -54,9 +63,56 @@
             localStorage.setItem(lastVisitKey, String(now));
             send('site_visit');
           }
+
+          const productMatch = location.pathname.match(/^\/(?:product|catalogue\/product)\/([^/]+)/);
+          if (productMatch) send('product_view', { productId: decodeURIComponent(productMatch[1]) });
+
+          const startedAt = Date.now();
+          let engaged = false;
+          let sentEnd = false;
+          const scrollMilestones = new Set();
+          const getScrollDepth = () => {
+            const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+            return Math.min(100, Math.round((window.scrollY / max) * 100));
+          };
+          const markEngaged = () => {
+            if (engaged) return;
+            if (Date.now() - startedAt >= 20000) {
+              engaged = true;
+              send('engaged_visit', { durationSeconds: Math.round((Date.now() - startedAt) / 1000), scrollDepth: getScrollDepth() });
+            }
+          };
+          const onScroll = () => {
+            const depth = getScrollDepth();
+            for (const milestone of [25, 50, 75, 90]) {
+              if (depth >= milestone && !scrollMilestones.has(milestone)) {
+                scrollMilestones.add(milestone);
+                send('scroll_depth', { scrollDepth: milestone });
+              }
+            }
+            markEngaged();
+          };
+          const onActivity = () => markEngaged();
+          const endSession = () => {
+            if (sentEnd) return;
+            sentEnd = true;
+            const durationSeconds = Math.round((Date.now() - startedAt) / 1000);
+            if (durationSeconds >= 5) send('session_end', { durationSeconds, scrollDepth: getScrollDepth() });
+          };
+          window.addEventListener('scroll', onScroll, { passive: true });
+          ['pointerdown', 'touchstart', 'keydown'].forEach((eventName) => window.addEventListener(eventName, onActivity, { passive: true }));
+          document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') endSession(); });
+          window.addEventListener('pagehide', endSession);
+
           document.addEventListener('click', (event) => {
-            const target = event.target instanceof Element ? event.target.closest('[data-testid="link-whatsapp-enquiry"]') : null;
-            if (target) send('whatsapp_click');
+            const target = event.target instanceof Element ? event.target : null;
+            if (!target) return;
+            if (target.closest('[data-testid="link-whatsapp-enquiry"]')) send('whatsapp_click');
+            const link = target.closest('a[href]');
+            if (!link) return;
+            const href = link.getAttribute('href') || '';
+            const match = href.match(/^\/(?:product|catalogue\/product)\/([^/?#]+)/);
+            if (match) send('product_click', { productId: decodeURIComponent(match[1]) });
           });
         } catch (_) {}
       })();
